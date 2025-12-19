@@ -40,8 +40,11 @@ graph TD
         JobStatus --> |完了| PayrollPeriod
     end
 
-    %% システム管理
-    subgraph SystemAdmin [システム管理者用メニュー]
+    %% システム管理者ロール
+    subgraph SystemAdminRole [システム管理者用メニュー]
+        Dashboard --> CompanySettings[会社設定管理]
+        Dashboard --> ContractManagement[契約・プラン管理]
+        Dashboard --> UserPermissionManagement[全ユーザー・権限管理]
         Dashboard --> AuditLogs[監査ログ照会]
         Dashboard --> JobHistory[全ジョブ履歴]
     end
