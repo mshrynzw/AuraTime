@@ -1,0 +1,246 @@
+# AuraTime .cursorignore
+# Cursorのコードベースインデックス化から除外するファイル
+
+# ============================================
+# 依存関係（インデックス化不要）
+# ============================================
+
+# Node.js / pnpm
+node_modules/
+.pnp
+.pnp.js
+.pnp.cjs
+.pnp.mjs
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Java / Maven / Gradle
+target/
+build/
+out/
+.gradle/
+.mvn/
+mvnw
+mvnw.cmd
+gradlew
+gradlew.bat
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+
+# ============================================
+# ビルド成果物（インデックス化不要）
+# ============================================
+
+# Next.js
+.next/
+out/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# Spring Boot
+*.log
+*.log.*
+*.gz
+
+# ============================================
+# 環境変数・設定ファイル（機密情報）
+# ============================================
+
+# 環境変数
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# 設定ファイル（機密情報を含む可能性）
+application-local.yml
+application-local.properties
+application-dev.yml
+application-dev.properties
+
+# ============================================
+# データベース（インデックス化不要）
+# ============================================
+
+# ローカルデータベースファイル
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# データベースダンプ
+*.sql.dump
+*.backup
+
+# ============================================
+# IDE・エディタ設定（インデックス化不要）
+# ============================================
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+.metadata
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Cursor（自身の設定ファイルは除外）
+.cursor/
+
+# ============================================
+# OS固有ファイル（インデックス化不要）
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ============================================
+# ログファイル（インデックス化不要）
+# ============================================
+
+logs/
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================
+# テスト・カバレッジ（インデックス化不要）
+# ============================================
+
+# テスト結果
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+playwright-report/
+playwright/.cache/
+
+# ============================================
+# 一時ファイル・キャッシュ（インデックス化不要）
+# ============================================
+
+# 一時ファイル
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.cache/
+.temp/
+.tmp/
+
+# キャッシュ
+.parcel-cache/
+.eslintcache
+.stylelintcache
+.turbo/
+
+# ============================================
+# その他（インデックス化不要）
+# ============================================
+
+# バックアップファイル
+*.bak
+*.backup
+*.old
+
+# 圧縮ファイル
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# ドキュメント生成（自動生成されるもの）
+docs/generated/
+api-docs/
+
+# セキュリティ関連（機密情報）
+*.pem
+*.key
+*.crt
+*.cert
+secrets/
+.secrets/
+
+# AWS関連（ローカル設定）
+.aws/
+aws-exports.js
+
+# Docker（開発用）
+docker-compose.override.yml
+.dockerignore.local
+
+# ============================================
+# 大きなファイル（インデックス化不要）
+# ============================================
+
+# 大きなバイナリファイル
+*.pdf
+*.xlsx
+*.xls
+*.doc
+*.docx
+*.ppt
+*.pptx
+
+# 画像ファイル（必要に応じてコメントアウト）
+# *.jpg
+# *.jpeg
+# *.png
+# *.gif
+# *.svg
+# *.ico
+
+# 動画・音声ファイル
+*.mp4
+*.avi
+*.mov
+*.mp3
+*.wav
+
