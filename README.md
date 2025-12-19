@@ -14,21 +14,88 @@ AuraTimeは、中規模〜大規模組織をターゲットとした、セキュ
 - **支払管理**: 銀行振込データ（FBデータ）作成、支払ステータス管理
 - **監査・ログ**: 業務データ変更履歴の保持、ジョブ実行履歴の可視化
 
+## 技術スタック
+
+### フロントエンド
+- **Next.js 16.0.10以上** (TypeScript)
+  - App Router
+  - Server Components / Client Components
+  - Server Actions
+  - **重要**: セキュリティアップデート（CVE-2025-55184, CVE-2025-55183）が適用されたバージョンを使用
+- **React 19.2.1以上**
+  - **重要**: CVE-2025-55182（RCE）が修正されたバージョンを使用
+- **pnpm** (パッケージマネージャー)
+  - 厳密な依存関係管理
+  - ディスク容量の節約
+  - 高速なインストール
+- **Tailwind CSS 4.x** (スタイリング)
+- **Shadcn UI** (UIコンポーネント)
+- **React Hook Form** (フォーム管理)
+- **Zod** (バリデーション)
+- **React Query** (データフェッチング)
+
+### バックエンド
+- **Spring Boot 3.3.x以上** (Java)
+  - Spring Security (認証・認可)
+  - Spring Batch (バッチ処理)
+  - Spring Data JPA (データベースアクセス)
+  - Spring AOP (監査ログ)
+- **Java 21 LTS** (またはJava 17 LTS)
+- **Maven / Gradle** (ビルドツール)
+
+### データベース・インフラ
+- **PostgreSQL 16.x** (AWS RDS推奨)
+  - UUID v7生成関数 (`gen_uuid_v7()`) が必要
+  - 拡張機能: `pgcrypto`
+- **Redis 7.2.x以上** (ElastiCache推奨)
+  - セッションストア
+  - キャッシュ
+  - キュー管理（オプション）
+- **AWS S3** (ファイルストレージ)
+  - 給与明細PDF
+  - CSV/Excel出力
+- **AWS CloudWatch** (ログ管理)
+  - システムログ
+  - アプリケーションログ
+
+### デプロイメント
+- **フロントエンド**: AWS Amplify
+  - Git連携で自動デプロイ
+  - CloudFrontで高速配信
+- **バックエンド**: AWS EC2 / ECS
+  - Dockerコンテナ化
+  - ロードバランサー対応
+
 ## システム要件
 
-### データベース
-- **PostgreSQL 13以上** (AWS RDS推奨)
-- UUID v7生成関数 (`gen_uuid_v7()`) が必要
-- 拡張機能: `pgcrypto`
-
-### インフラ（本番環境想定）
-- **AWS RDS**: PostgreSQLデータベース
-- **AWS CloudWatch Logs**: システムログの保管
-- **その他**: アプリケーションサーバー、ロードバランサー等（実装時に決定）
-
 ### 開発環境
-- PostgreSQL 13以上（ローカルまたはDocker）
-- マイグレーションツール（Flyway, Liquibase, Laravel Migration等）
+- **Node.js**: 20.x LTS以上
+- **pnpm**: 9.x以上（パッケージマネージャー）
+- **Java**: 21 LTS（または17 LTS）
+- **PostgreSQL**: 16.x（ローカルまたはDocker）
+- **Redis**: 7.2.x以上（ローカルまたはDocker、オプション）
+
+### 本番環境（AWS）
+- **AWS RDS**: PostgreSQL 16.xデータベース
+- **AWS ElastiCache**: Redis 7.2.x（セッション・キャッシュ）
+- **AWS S3**: ファイルストレージ
+- **AWS CloudWatch**: ログ管理
+- **AWS Amplify**: フロントエンドホスティング
+- **AWS EC2 / ECS**: バックエンドホスティング
+
+## セキュリティに関する重要な注意事項
+
+### Next.js / React
+- **必須**: Next.js 16.0.10以上、React 19.2.1以上を使用してください
+- これらのバージョンには、以下の脆弱性の修正が含まれています：
+  - CVE-2025-55184: Denial of Service（DoS）
+  - CVE-2025-55183: Source Code Exposure
+  - CVE-2025-55182: Remote Code Execution (RCE)
+- 詳細: [Next.js Security Update: December 11, 2025](https://nextjs.org/blog/security-update-2025-12-11)
+
+### 定期的なセキュリティチェック
+- 各技術スタックの公式セキュリティアドバイザリを定期的に確認してください
+- セキュリティパッチがリリースされたら、速やかにアップデートしてください
 
 ## ドキュメント
 
@@ -70,14 +137,20 @@ createdb auratime
 #### Dockerを使用する場合
 
 ```bash
-# PostgreSQLコンテナの起動（例）
+# PostgreSQLコンテナの起動
 docker run -d \
   --name auratime-db \
   -e POSTGRES_DB=auratime \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=postgres \
   -p 5432:5432 \
-  postgres:13
+  postgres:16
+
+# Redisコンテナの起動（オプション）
+docker run -d \
+  --name auratime-redis \
+  -p 6379:6379 \
+  redis:7.2-alpine
 ```
 
 ### 3. 初期マイグレーションの実行
@@ -96,6 +169,27 @@ psql -d auratime -f database/migrations/20260101_init.sql
 
 システム管理用ユーザー（`system-bot`）の作成が必要です。詳細は [`docs/310_DDL運用.md`](./docs/310_DDL運用.md) を参照してください。
 
+### 5. フロントエンドのセットアップ
+
+```bash
+# pnpmのインストール（未インストールの場合）
+npm install -g pnpm
+
+# フロントエンドのセットアップ
+cd frontend
+pnpm install
+pnpm dev
+```
+
+### 6. バックエンドのセットアップ
+
+```bash
+cd backend
+./mvnw spring-boot:run
+# または
+./gradlew bootRun
+```
+
 ## プロジェクト構造
 
 ```
@@ -108,10 +202,22 @@ AuraTime/
 │   ├── 300_DB設計方針.md   # DB設計方針
 │   ├── 500_API基本方針.md  # API基本方針
 │   └── ...                 # その他の設計ドキュメント
+├── frontend/               # Next.jsフロントエンド
+│   ├── app/               # App Router
+│   ├── components/        # Reactコンポーネント
+│   ├── lib/              # ユーティリティ
+│   ├── package.json
+│   └── pnpm-lock.yaml     # pnpmロックファイル
+├── backend/               # Spring Bootバックエンド
+│   ├── src/
+│   │   └── main/
+│   │       ├── java/      # Javaソースコード
+│   │       └── resources/ # 設定ファイル
+│   └── pom.xml           # または build.gradle
 ├── database/
 │   └── migrations/
 │       └── 20260101_init.sql  # 初期マイグレーション
-└── README.md               # このファイル
+└── README.md             # このファイル
 ```
 
 ## 開発
@@ -119,18 +225,23 @@ AuraTime/
 ### 開発環境の構築
 
 1. データベースのセットアップ（上記「セットアップ」を参照）
-2. アプリケーションコードの実装（言語・フレームワークは未定）
-3. 環境変数の設定（`.env` ファイル等）
-4. 開発サーバーの起動
+2. フロントエンドのセットアップ（Next.js）
+3. バックエンドのセットアップ（Spring Boot）
+4. 環境変数の設定（`.env` ファイル等）
+5. 開発サーバーの起動
 
 ### コーディング規約
 
-- 実装時に決定（言語・フレームワークに応じて）
+- **フロントエンド**: ESLint + Prettier（Next.js標準）
+- **バックエンド**: Google Java Style Guide または Checkstyle
+- **コミットメッセージ**: Conventional Commits
 
 ### テスト
 
 - 詳細は [`docs/700_テスト設計.md`](./docs/700_テスト設計.md) を参照
 - マルチテナント境界のテストを重点的に実施
+- **フロントエンド**: Jest + React Testing Library
+- **バックエンド**: JUnit 5 + Mockito
 
 ## アーキテクチャの特徴
 
@@ -152,14 +263,14 @@ AuraTime/
 
 以下の技術選定は未決定です。詳細は [`docs/900_決定事項_未決定事項.md`](./docs/900_決定事項_未決定事項.md) を参照してください。
 
-- プログラミング言語・フレームワーク
 - 認証方式（OAuth2/OIDC vs 内製JWT）
-- フロントエンドスタック
 - 行レベルセキュリティ（RLS）の実装有無
+- 給与計算エンジンのDSL導入の是非
+- データアーカイブ方針（7年以上保管が義務付けられる法定帳票データの長期保存方法）
 
 ## ライセンス
 
-未定
+[`LICENSE`](./LICENSE)を参照してください。
 
 ## 貢献
 
