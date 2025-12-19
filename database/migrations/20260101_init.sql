@@ -8,6 +8,51 @@
 -- UUID生成（pgcrypto）
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- UUID v7生成関数（RFC 4122準拠、タイムスタンプベースでソート可能）
+CREATE OR REPLACE FUNCTION gen_uuid_v7()
+RETURNS uuid AS $$
+DECLARE
+  unix_ts_ms bigint;
+  uuid_bytes bytea;
+BEGIN
+  -- Unixタイムスタンプ（ミリ秒）を取得
+  unix_ts_ms := EXTRACT(EPOCH FROM now()) * 1000;
+  
+  -- UUID v7フォーマット: タイムスタンプ(48bit) + バージョン(4bit) + ランダム(12bit) + バリアント(2bit) + ランダム(62bit)
+  -- タイムスタンプを48bitに変換（上位16bitは0埋め）
+  uuid_bytes := 
+    set_byte(
+      set_byte(
+        set_byte(
+          set_byte(
+            set_byte(
+              set_byte(
+                gen_random_bytes(16),
+                0, (unix_ts_ms >> 40)::int & 255
+              ),
+              1, (unix_ts_ms >> 32)::int & 255
+            ),
+            2, (unix_ts_ms >> 24)::int & 255
+          ),
+          3, (unix_ts_ms >> 16)::int & 255
+        ),
+        4, (unix_ts_ms >> 8)::int & 255
+      ),
+      5, unix_ts_ms::int & 255
+    );
+  
+  -- バージョン7を設定（7番目のバイトの上位4bitを0x70に設定）
+  uuid_bytes := set_byte(uuid_bytes, 6, (get_byte(uuid_bytes, 6) & 15) | 112);
+  
+  -- バリアント（8番目のバイトの上位2bitを10に設定）
+  uuid_bytes := set_byte(uuid_bytes, 8, (get_byte(uuid_bytes, 8) & 63) | 128);
+  
+  RETURN encode(uuid_bytes, 'hex')::uuid;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION gen_uuid_v7() IS 'UUID v7を生成（タイムスタンプベース、時系列順にソート可能）';
+
 -- updated_at 自動更新（updated_by はアプリで必ず設定）
 CREATE OR REPLACE FUNCTION trg_set_updated_at()
 RETURNS trigger AS $$
@@ -23,7 +68,7 @@ $$ LANGUAGE plpgsql;
 
 -- companies（会社=テナント）
 CREATE TABLE companies (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
 
   name text NOT NULL,
   code text NOT NULL,
@@ -64,7 +109,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 -- users（ユーザー）
 CREATE TABLE users (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
 
   email text NOT NULL,
   family_name text NOT NULL,
@@ -141,7 +186,7 @@ ALTER TABLE users
 
 -- company_memberships（会社所属/権限）
 CREATE TABLE company_memberships (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
 
   company_id uuid NOT NULL REFERENCES companies(id),
   user_id uuid NOT NULL REFERENCES users(id),
@@ -184,7 +229,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 -- groups（部署/勤務地/チーム/コストセンター等の統合）
 CREATE TABLE groups (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
 
   company_id uuid NOT NULL REFERENCES companies(id),
   type text NOT NULL, -- department|work_location|team|cost_center|custom
@@ -231,7 +276,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 -- employees（従業員）
 CREATE TABLE employees (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
 
   company_id uuid NOT NULL REFERENCES companies(id),
   user_id uuid REFERENCES users(id),
@@ -278,7 +323,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 -- employee_groups（所属：履歴/兼務/役割）
 CREATE TABLE employee_groups (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
 
   company_id uuid NOT NULL REFERENCES companies(id),
   employee_id uuid NOT NULL REFERENCES employees(id),
@@ -330,7 +375,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 -- shift_templates（シフトテンプレ）
 CREATE TABLE shift_templates (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   name text NOT NULL,
@@ -373,7 +418,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 -- shift_break_templates（シフト休憩テンプレ）
 CREATE TABLE shift_break_templates (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
   shift_template_id uuid NOT NULL REFERENCES shift_templates(id),
 
@@ -409,7 +454,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 -- shift_assignments（シフト割当）
 CREATE TABLE shift_assignments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   employee_id uuid NOT NULL REFERENCES employees(id),
@@ -450,7 +495,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 -- time_clock_events（打刻：生ログ）
 CREATE TABLE time_clock_events (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   employee_id uuid NOT NULL REFERENCES employees(id),
@@ -493,7 +538,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 -- time_records（勤怠：日次集計/申請承認）
 CREATE TABLE time_records (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   employee_id uuid NOT NULL REFERENCES employees(id),
@@ -564,7 +609,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 -- =========================================================
 
 CREATE TABLE approval_requests (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   target_type text NOT NULL, -- time_record|leave_request|other
@@ -611,7 +656,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 
 CREATE TABLE approval_steps (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   approval_request_id uuid NOT NULL REFERENCES approval_requests(id),
@@ -660,7 +705,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 -- =========================================================
 
 CREATE TABLE leave_types (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   name text NOT NULL,
@@ -700,7 +745,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 
 CREATE TABLE leave_requests (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   employee_id uuid NOT NULL REFERENCES employees(id),
@@ -751,7 +796,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 -- =========================================================
 
 CREATE TABLE payroll_calendars (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   name text NOT NULL,
@@ -789,7 +834,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 
 CREATE TABLE payroll_periods (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   payroll_calendar_id uuid NOT NULL REFERENCES payroll_calendars(id),
@@ -833,7 +878,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 
 CREATE TABLE compensation_plans (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   employee_id uuid NOT NULL REFERENCES employees(id),
@@ -881,7 +926,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 
 CREATE TABLE pay_items (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   code text NOT NULL,
@@ -923,7 +968,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 
 CREATE TABLE payslips (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   payroll_period_id uuid NOT NULL REFERENCES payroll_periods(id),
@@ -968,7 +1013,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 
 CREATE TABLE payslip_lines (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   payslip_id uuid NOT NULL REFERENCES payslips(id),
@@ -1013,7 +1058,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 
 CREATE TABLE payments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   payroll_period_id uuid NOT NULL REFERENCES payroll_periods(id),
@@ -1053,7 +1098,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 
 CREATE TABLE payment_lines (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   payment_id uuid NOT NULL REFERENCES payments(id),
@@ -1095,7 +1140,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 -- =========================================================
 
 CREATE TABLE audit_logs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   actor_user_id uuid REFERENCES users(id) DEFERRABLE INITIALLY DEFERRED,
@@ -1143,7 +1188,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 
 CREATE TABLE job_runs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   job_type text NOT NULL, -- payroll_calculation|payroll_finalize|export_csv|import_csv|etc
@@ -1190,7 +1235,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 
 
 CREATE TABLE job_run_events (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY DEFAULT gen_uuid_v7(),
   company_id uuid NOT NULL REFERENCES companies(id),
 
   job_run_id uuid NOT NULL REFERENCES job_runs(id),
