@@ -1,0 +1,50 @@
+graph TD
+    %% 共通
+    Start((開始)) --> Login[ログイン画面]
+    Login --> |認証失敗| Login
+    Login --> |認証成功| Dashboard[ダッシュボード]
+
+    %% 従業員ロール
+    subgraph EmployeeRole [従業員用メニュー]
+        Dashboard --> Attendance[打刻・状況確認]
+        Dashboard --> DailyList[日次勤怠一覧]
+        Dashboard --> LeaveRequest[休暇申請]
+        Dashboard --> PayslipList[給与明細一覧]
+        
+        DailyList --> |修正申請| DailyEdit[日次勤怠修正申請]
+        DailyEdit --> |送信| DailyList
+        
+        PayslipList --> PayslipDetail[給与明細詳細]
+    end
+
+    %% マネージャーロール
+    subgraph ManagerRole [マネージャー用メニュー]
+        Dashboard --> ApprList[承認待ち一覧]
+        Dashboard --> TeamAttend[部下勤怠状況]
+        Dashboard --> ShiftWork[シフト作成・割当]
+        
+        ApprList --> ApprDetail[承認詳細・操作]
+        ApprDetail --> |承認/却下| ApprList
+    end
+
+    %% Adminロール
+    subgraph AdminRole [管理者用メニュー]
+        Dashboard --> PayrollPeriod[給与期間管理]
+        Dashboard --> EmployeeMaster[社員マスタ管理]
+        Dashboard --> GroupMaster[組織・コストセンター管理]
+        Dashboard --> PaymentBatch[支払処理]
+        
+        PayrollPeriod --> |締め操作| PayrollPeriod
+        PayrollPeriod --> |計算ジョブ起動| JobStatus[ジョブ実行状況]
+        
+        JobStatus --> |完了| PayrollPeriod
+    end
+
+    %% システム管理
+    subgraph SystemAdmin [システム管理者用メニュー]
+        Dashboard --> AuditLogs[監査ログ照会]
+        Dashboard --> JobHistory[全ジョブ履歴]
+    end
+
+    %% ログアウト
+    Dashboard --> Logout((ログアウト))

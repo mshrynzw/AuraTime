@@ -1,0 +1,478 @@
+erDiagram
+  COMPANIES {
+    uuid id PK
+    string name
+    string code
+    string timezone
+    string currency
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  USERS {
+    uuid id PK
+    string email
+    string family_name
+    string first_name
+    string family_name_kana
+    string first_name_kana
+    string status "active|inactive|locked"
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  COMPANY_MEMBERSHIPS {
+    uuid id PK
+    uuid company_id FK
+    uuid user_id FK
+    string role "system_admin|admin|manager|employee"
+    datetime joined_at
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  GROUPS {
+    uuid id PK
+    uuid company_id FK
+    string type
+    string name
+    string code
+    uuid parent_group_id FK
+    int sort_order
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  EMPLOYEES {
+    uuid id PK
+    uuid company_id FK
+    uuid user_id FK
+    string employee_no
+    string employment_type
+    date hire_date
+    date termination_date
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  EMPLOYEE_GROUPS {
+    uuid id PK
+    uuid company_id FK
+    uuid employee_id FK
+    uuid group_id FK
+    string role_in_group "leader|member"
+    date valid_from
+    date valid_to
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  SHIFT_TEMPLATES {
+    uuid id PK
+    uuid company_id FK
+    string name
+    time default_start
+    time default_end
+    int break_minutes
+    bool is_night_shift
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  SHIFT_BREAK_TEMPLATES {
+    uuid id PK
+    uuid company_id FK
+    uuid shift_template_id FK
+    time break_start
+    time break_end
+    string break_name
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  SHIFT_ASSIGNMENTS {
+    uuid id PK
+    uuid company_id FK
+    uuid employee_id FK
+    date work_date
+    uuid shift_template_id FK
+    uuid work_group_id FK
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  TIME_CLOCK_EVENTS {
+    uuid id PK
+    uuid company_id FK
+    uuid employee_id FK
+    datetime happened_at
+    string type "in|out|break_in|break_out"
+    string source "web|mobile|ic_card|admin"
+    string note
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  TIME_RECORDS {
+    uuid id PK
+    uuid company_id FK
+    uuid employee_id FK
+    date work_date
+    datetime start_at
+    datetime end_at
+    int break_minutes
+    int work_minutes
+    int overtime_minutes
+    int night_minutes
+    string status "draft|submitted|approved|rejected|locked"
+    uuid submitted_by FK
+    datetime submitted_at
+    uuid approved_by FK
+    datetime approved_at
+    uuid cost_group_id FK
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  APPROVAL_REQUESTS {
+    uuid id PK
+    uuid company_id FK
+    string target_type "time_record|leave_request"
+    uuid target_id
+    uuid requester_user_id FK
+    uuid current_approver_user_id FK
+    string status "pending|approved|rejected|canceled"
+    datetime requested_at
+    datetime resolved_at
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  APPROVAL_STEPS {
+    uuid id PK
+    uuid company_id FK
+    uuid approval_request_id FK
+    int step_no
+    uuid approver_user_id FK
+    string status "pending|approved|rejected|skipped"
+    datetime acted_at
+    string comment
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  LEAVE_TYPES {
+    uuid id PK
+    uuid company_id FK
+    string name
+    string code
+    bool is_paid
+    bool requires_approval
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  LEAVE_REQUESTS {
+    uuid id PK
+    uuid company_id FK
+    uuid employee_id FK
+    uuid leave_type_id FK
+    date start_date
+    date end_date
+    decimal days
+    string status "draft|submitted|approved|rejected|canceled"
+    string reason
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  PAYROLL_CALENDARS {
+    uuid id PK
+    uuid company_id FK
+    string name
+    int closing_day
+    int payday_day
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  PAYROLL_PERIODS {
+    uuid id PK
+    uuid company_id FK
+    uuid payroll_calendar_id FK
+    date period_start
+    date period_end
+    date closing_date
+    date pay_date
+    string status "open|closed|calculated|finalized"
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  COMPENSATION_PLANS {
+    uuid id PK
+    uuid company_id FK
+    uuid employee_id FK
+    string pay_type
+    decimal base_salary
+    decimal hourly_rate
+    decimal overtime_rate
+    decimal night_rate
+    date effective_from
+    date effective_to
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  PAY_ITEMS {
+    uuid id PK
+    uuid company_id FK
+    string code
+    string name
+    string type
+    bool taxable
+    int sort_order
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  PAYSLIPS {
+    uuid id PK
+    uuid company_id FK
+    uuid payroll_period_id FK
+    uuid employee_id FK
+    string status "draft|confirmed|paid"
+    decimal gross
+    decimal total_deduction
+    decimal net
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  PAYSLIP_LINES {
+    uuid id PK
+    uuid company_id FK
+    uuid payslip_id FK
+    uuid pay_item_id FK
+    decimal quantity
+    decimal unit_amount
+    decimal amount
+    string note
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  PAYMENTS {
+    uuid id PK
+    uuid company_id FK
+    uuid payroll_period_id FK
+    date pay_date
+    string method "bank_transfer|cash"
+    string status "scheduled|processing|done|failed"
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  PAYMENT_LINES {
+    uuid id PK
+    uuid company_id FK
+    uuid payment_id FK
+    uuid payslip_id FK
+    decimal amount
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  AUDIT_LOGS {
+    uuid id PK
+    uuid company_id FK
+    uuid actor_user_id FK
+    string action
+    string target_type "users|employees|etc"
+    uuid target_id
+    json before_data
+    json after_data
+    string request_id
+    datetime happened_at
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  JOB_RUNS {
+    uuid id PK
+    uuid company_id FK
+    string job_type "payroll_calculation|etc"
+    string status "running|success|failed|canceled"
+    string request_id
+    datetime started_at
+    datetime finished_at
+    json params
+    json result
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  JOB_RUN_EVENTS {
+    uuid id PK
+    uuid company_id FK
+    uuid job_run_id FK
+    string level
+    string message
+    json metadata
+    datetime happened_at
+    datetime created_at
+    uuid created_by
+    datetime updated_at
+    uuid updated_by
+    datetime deleted_at
+    uuid deleted_by
+  }
+
+  COMPANIES ||--o{ COMPANY_MEMBERSHIPS : has
+  USERS ||--o{ COMPANY_MEMBERSHIPS : joins
+
+  COMPANIES ||--o{ GROUPS : has
+  GROUPS ||--o{ GROUPS : parent_child
+
+  COMPANIES ||--o{ EMPLOYEES : employs
+  EMPLOYEES ||--o{ COMPENSATION_PLANS : set_to
+  USERS ||--o{ EMPLOYEES : maps_to
+
+  EMPLOYEES ||--o{ EMPLOYEE_GROUPS : belongs
+  GROUPS ||--o{ EMPLOYEE_GROUPS : includes
+
+  COMPANIES ||--o{ COMPENSATION_PLANS : has
+  COMPANIES ||--o{ SHIFT_TEMPLATES : has
+  SHIFT_TEMPLATES ||--o{ SHIFT_BREAK_TEMPLATES : contains
+  EMPLOYEES ||--o{ SHIFT_ASSIGNMENTS : scheduled
+  SHIFT_TEMPLATES ||--o{ SHIFT_ASSIGNMENTS : uses
+  GROUPS ||--o{ SHIFT_ASSIGNMENTS : work_group
+
+  EMPLOYEES ||--o{ TIME_CLOCK_EVENTS : generates
+  EMPLOYEES ||--o{ TIME_RECORDS : has
+  GROUPS ||--o{ TIME_RECORDS : cost_group
+
+  COMPANIES ||--o{ APPROVAL_REQUESTS : has
+  APPROVAL_REQUESTS ||--o{ APPROVAL_STEPS : contains
+
+  COMPANIES ||--o{ LEAVE_TYPES : defines
+  EMPLOYEES ||--o{ LEAVE_REQUESTS : requests
+  LEAVE_TYPES ||--o{ LEAVE_REQUESTS : categorized
+
+  COMPANIES ||--o{ PAYROLL_CALENDARS : has
+  PAYROLL_CALENDARS ||--o{ PAYROLL_PERIODS : creates
+  PAYROLL_PERIODS ||--o{ PAYSLIPS : generates
+  EMPLOYEES ||--o{ PAYSLIPS : receives
+  PAYSLIPS ||--o{ PAYSLIP_LINES : details
+  COMPANIES ||--o{ PAY_ITEMS : defines
+  PAY_ITEMS ||--o{ PAYSLIP_LINES : used_by
+
+  PAYROLL_PERIODS ||--o{ PAYMENTS : pays
+  PAYMENTS ||--o{ PAYMENT_LINES : lines
+  PAYSLIPS ||--o{ PAYMENT_LINES : settled_by
+
+  COMPANIES ||--o{ AUDIT_LOGS : has
+  USERS ||--o{ AUDIT_LOGS : acts
+
+  COMPANIES ||--o{ JOB_RUNS : runs
+  JOB_RUNS ||--o{ JOB_RUN_EVENTS : logs

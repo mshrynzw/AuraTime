@@ -1,0 +1,48 @@
+block-beta
+    columns 4
+    
+    %% 共通ヘッダー
+    header["AuraTime | 2025年12月18日（木）09時30分 | 山田 太郎 (従業員) | ログアウト"]:4
+    
+    %% サイドバーとメインコンテンツ
+    block:side:1
+        columns 1
+        menu1["🏠 ダッシュボード"]
+        menu2["⏱ 打刻・勤怠"]
+        menu3["📅 休暇申請"]
+        menu4["📄 給与明細"]
+    end
+    
+    block:main:3
+        columns 3
+        %% 上段：クイック統計
+        stat1["今月の稼働<br/>145.0h"]:1
+        stat2["残業合計<br/>12.5h"]:1
+        stat3["有給残数<br/>10.5日"]:1
+        
+        %% 中段：メイン操作（打刻）
+        clock_area["
+            <h3>現在時刻 09:15</h3>
+            <button>出勤</button> <button disabled>退勤</button>
+            <br/><br/>
+            <button>休憩入</button> <button disabled>休憩戻</button>
+        "]:3
+        
+        %% 下段：直近の履歴
+        history_list["
+            <h4>直近の打刻履歴</h4>
+            12/17 09:02 出勤 (Web)<br/>
+            12/17 12:00 休憩入 (Web)<br/>
+            12/17 13:00 休憩戻 (Web)<br/>
+            12/17 18:15 退勤 (Web)
+        "]:3
+    end
+    
+    %% フッター
+    footer["© 2025 AuraTime Inc. | ヘルプ | お問い合わせ"]:4
+
+    style side fill:#f5f5f5,stroke:#ddd
+    style main fill:#fff,stroke:#eee
+    style header fill:#333,color:#fff
+    style clock_area fill:#e7f3ff,stroke:#2196f3
+
