@@ -1,0 +1,231 @@
+# AuraTime プロジェクトルール
+
+## 技術スタック
+
+### バックエンド
+- **Spring Boot 3.3.x以上** (Java)
+  - Spring Security (認証・認可)
+  - Spring Batch (バッチ処理)
+  - Spring Data JPA (データベースアクセス)
+  - Spring AOP (監査ログ)
+- **Java 21 LTS** (またはJava 17 LTS)
+- **Maven / Gradle** (ビルドツール)
+
+### フロントエンド
+- **Next.js 16.0.10以上** (TypeScript)
+  - App Router
+  - Server Components / Client Components
+  - Server Actions
+  - **重要**: セキュリティアップデート（CVE-2025-55184, CVE-2025-55183）が適用されたバージョンを使用
+- **React 19.2.1以上**
+  - **重要**: CVE-2025-55182（RCE）が修正されたバージョンを使用
+- **pnpm 9.x以上** (パッケージマネージャー)
+  - npmではなくpnpmを使用すること
+- **Tailwind CSS 4.x** (スタイリング)
+- **Shadcn UI** (UIコンポーネント)
+- **React Hook Form** (フォーム管理)
+- **Zod** (バリデーション)
+- **React Query** (データフェッチング)
+
+### データベース
+- **PostgreSQL 16.x**
+  - UUID v7生成関数 (`gen_uuid_v7()`) を使用
+  - 拡張機能: `pgcrypto`
+
+## コーディング規約
+
+### Java (Spring Boot)
+- **スタイルガイド**: Google Java Style Guide準拠
+- **命名規則**:
+  - クラス名: PascalCase (例: `TimeClockController`)
+  - メソッド名: camelCase (例: `createEvent`)
+  - 定数: UPPER_SNAKE_CASE (例: `MAX_RETRY_COUNT`)
+  - パッケージ名: lowercase (例: `com.auratime.api.v1`)
+- **アノテーション**: Spring Securityの`@PreAuthorize`を使用して認可を制御
+- **例外処理**: 統一された例外ハンドラーを使用
+- **ログ**: SLF4J + Logbackを使用
+
+### TypeScript (Next.js)
+- **スタイルガイド**: ESLint + Prettier（Next.js標準設定）
+- **命名規則**:
+  - コンポーネント名: PascalCase (例: `TimeClockPage`)
+  - 関数名: camelCase (例: `handleClockIn`)
+  - 定数: UPPER_SNAKE_CASE (例: `API_BASE_URL`)
+  - ファイル名: kebab-case (例: `time-clock-page.tsx`)
+- **型定義**: 明示的な型定義を推奨、`any`は避ける
+- **コンポーネント**: Server Componentsを優先、必要に応じてClient Componentsを使用
+
+### データベース
+- **テーブル名**: snake_case (例: `time_clock_events`)
+- **カラム名**: snake_case (例: `company_id`, `happened_at`)
+- **インデックス**: `company_id`を第1キーとする複合インデックスを多用
+
+### コミットメッセージ
+- **形式**: Conventional Commits
+- **例**: `feat: 打刻APIの実装`, `fix: マルチテナント分離のバグ修正`
+
+## アーキテクチャ原則
+
+### マルチテナント分離（最重要）
+- **必須**: 全てのAPIエンドポイントで`company_id`をトークンから取得し、自動設定
+- **禁止**: リクエストパラメータやボディから`company_id`を受け取らない
+- **セキュリティ**: 他社データへのアクセスは403 Forbiddenを返却
+- **実装**: Spring SecurityのフィルターまたはLaravelのミドルウェアで実装
+- **テスト**: 各機能でマルチテナント分離のテストを必ず実装
+
+### 認証・認可
+- **認証**: JWT (JSON Web Token) を使用
+- **認可**: Spring Securityの`@PreAuthorize`アノテーションを使用
+- **ロール**: `system_admin`, `admin`, `manager`, `employee`の4種類
+- **実装**: 全てのAPIエンドポイントで認証・認可を実装
+
+### エラーハンドリング
+- **統一フォーマット**: 全てのAPIで統一されたエラーレスポンス形式を使用
+  ```json
+  {
+    "success": false,
+    "error": {
+      "code": "INVALID_PARAMETER",
+      "message": "入力値が不正です。",
+      "details": [...]
+    },
+    "request_id": "req-12345678"
+  }
+  ```
+- **HTTPステータスコード**: 適切なステータスコードを使用（400, 401, 403, 404, 409, 500等）
+
+### ID管理
+- **UUID v7**: 全てのIDはUUID v7を使用
+- **生成**: PostgreSQL関数`gen_uuid_v7()`を使用
+- **外部露出**: APIで返却するIDもUUID v7とし、推測可能な連番は避ける
+
+### 監査ログ
+- **自動記録**: データ変更時は自動的に監査ログを記録
+- **実装**: Spring AOPまたはLaravel Events/Listenersを使用
+- **必須項目**: `created_by`, `updated_by`を自動設定
+
+### ソフト削除
+- **実装**: 全てのテーブルで`deleted_at`, `deleted_by`を使用
+- **クエリ**: デフォルトで`deleted_at IS NULL`を条件に含める
+
+## セキュリティ
+
+### 認証トークン
+- **優先順位**: 認証トークンに埋め込まれた`company_id`を優先
+- **改ざん防止**: リクエストパラメータの`company_id`は無視する
+
+### 入力検証
+- **必須**: 全ての入力値をバリデーション
+- **実装**: Spring Bootは`@Valid`アノテーション、Next.jsはZodを使用
+
+### SQLインジェクション対策
+- **必須**: プリペアドステートメントを使用
+- **禁止**: 生のSQL文字列連結は禁止
+
+### XSS対策
+- **実装**: フレームワーク標準の保護機能を有効化
+- **Next.js**: Reactの自動エスケープを活用
+
+### CSRF対策
+- **実装**: フレームワーク標準の保護機能を有効化
+
+## API設計
+
+### REST原則
+- **GET**: リソースの取得、一覧表示
+- **POST**: リソースの作成、アクションの実行（計算、承認等）
+- **PATCH**: リソースの更新（PUTではなくPATCHを使用）
+- **DELETE**: リソースの削除（内部的にはソフト削除）
+
+### エンドポイント命名
+- **形式**: `/api/v1/{resource}`
+- **例**: `/api/v1/time-clock/events`, `/api/v1/leave-requests`
+
+### ページング
+- **パラメータ**: `?limit=20&offset=0`
+- **デフォルト**: limit=20, offset=0
+
+### ソート
+- **パラメータ**: `?sort=happened_at:desc,id:asc`
+
+### リクエストID
+- **ヘッダ**: `X-Request-Id` (UUID v7)
+- **用途**: ログの紐付けに使用
+
+## テスト
+
+### 単体テスト
+- **Java**: JUnit 5 + Mockito
+- **TypeScript**: Jest + React Testing Library
+
+### 統合テスト
+- **API**: 全てのAPIエンドポイントで統合テストを実装
+- **データベース**: テスト用データベースを使用
+
+### E2Eテスト
+- **主要フロー**: 打刻、勤怠修正申請、承認フロー等
+
+### テスト重点項目
+- **マルチテナント分離**: 他社データにアクセスできないことを確認
+- **認証・認可**: 適切なロールでアクセスできることを確認
+- **エラーハンドリング**: 適切なエラーレスポンスを返すことを確認
+
+## パフォーマンス
+
+### データベース
+- **インデックス**: `company_id`を含む複合インデックスを活用
+- **N+1問題**: ORM利用時はEager Loadingを徹底
+- **大量処理**: チャンク処理を使用（給与計算等）
+
+### キャッシュ
+- **マスタデータ**: 頻繁に参照されるマスタデータはキャッシュを検討
+- **注意**: 金額や労働時間などの整合性が重要なデータにはキャッシュを適用しない
+
+## ドキュメント
+
+### コードコメント
+- **Java**: Javadoc形式
+- **TypeScript**: JSDoc形式
+
+### API仕様
+- **参照**: `docs/500_API基本方針.md`および各API仕様書
+- **更新**: API変更時は必ずドキュメントを更新
+
+## 開発順序
+
+### 推奨順序
+1. **Phase 0**: 認証・認可基盤（最優先）
+2. **Phase 1**: コア機能（打刻、勤怠管理）
+3. **Phase 2**: 高度な機能（休暇、シフト、承認）
+4. **Phase 3**: 給与機能
+5. **Phase 4**: 管理・監査機能
+
+詳細は`docs/910_開発順序.md`を参照。
+
+## 禁止事項
+
+### セキュリティ
+- ❌ リクエストパラメータから`company_id`を受け取る
+- ❌ 認証なしのAPIエンドポイントを作成する
+- ❌ 生のSQL文字列連結を使用する
+- ❌ パスワードを平文で保存する
+
+### アーキテクチャ
+- ❌ 連番ID（シークエンス）を使用する
+- ❌ ハード削除を実装する（ソフト削除を使用）
+- ❌ 監査ログを手動で記録する（自動記録を使用）
+
+### コーディング
+- ❌ `any`型を使用する（TypeScript）
+- ❌ 未使用のインポートを残す
+- ❌ コメントアウトしたコードを残す
+
+## 参考ドキュメント
+
+- [README.md](../README.md): プロジェクト概要、技術スタック
+- [docs/100_基本設計.md](../docs/100_基本設計.md): 機能一覧、画面一覧、権限モデル
+- [docs/300_DB設計方針.md](../docs/300_DB設計方針.md): データベース設計方針
+- [docs/500_API基本方針.md](../docs/500_API基本方針.md): API設計方針
+- [docs/600_セキュリティ設計.md](../docs/600_セキュリティ設計.md): セキュリティ設計
+- [docs/910_開発順序.md](../docs/910_開発順序.md): 開発順序と実装ガイドライン
+
