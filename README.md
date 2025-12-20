@@ -141,11 +141,18 @@ cd AuraTime
 
 #### Docker Composeを使用する場合（推奨）
 
+**前提条件**: Docker Desktopが起動している必要があります。
+
 ```bash
-# PostgreSQLとRedisを起動
+# 1. Docker Desktopの起動確認
+# Windows: タスクバーのDockerアイコンを確認
+# Mac: メニューバーのDockerアイコンを確認
+# 起動していない場合は、Docker Desktopアプリケーションを起動してください
+
+# 2. PostgreSQLとRedisを起動
 docker-compose up -d
 
-# コンテナの状態確認
+# 3. コンテナの状態確認
 docker-compose ps
 
 # ログの確認
@@ -157,6 +164,19 @@ docker-compose down
 # データも含めて完全に削除（注意：データが消えます）
 docker-compose down -v
 ```
+
+**トラブルシューティング**:
+- `unable to get image` または `The system cannot find the file specified` エラーが出る場合
+  - Docker Desktopが起動していない可能性があります
+  - Docker Desktopを起動してから、再度 `docker-compose up -d` を実行してください
+- Docker Desktopの起動確認方法
+  ```bash
+  # Dockerのバージョン確認（起動していれば表示される）
+  docker --version
+  
+  # Docker Composeのバージョン確認
+  docker-compose --version
+  ```
 
 **docker-compose.ymlの内容**:
 - **PostgreSQL 16**: ポート5432、データベース名`auratime`
