@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: auratime-postgres
+    environment:
+      POSTGRES_DB: auratime
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # 開発環境用のパスワード（本番環境では変更必須）
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # 初期マイグレーションファイルをマウント（オプション）
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: auratime-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+

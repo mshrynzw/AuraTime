@@ -69,11 +69,26 @@ AuraTimeは、中規模〜大規模組織をターゲットとした、セキュ
 ## システム要件
 
 ### 開発環境
-- **Node.js**: 20.x LTS以上
-- **pnpm**: 9.x以上（パッケージマネージャー）
+- **Node.js**: 20.x LTS以上（または22.x LTS）
+  - 最新版（v24.x等）も開発環境では使用可能
+  - 本番環境ではLTS版を推奨
+- **pnpm**: 10.x以上（パッケージマネージャー）
+  - 最新版: 10.26.1（2025年1月時点）
 - **Java**: 21 LTS（または17 LTS）
-- **PostgreSQL**: 16.x（ローカルまたはDocker）
-- **Redis**: 7.2.x以上（ローカルまたはDocker、オプション）
+- **PostgreSQL**: 16.x（Docker）
+- **Redis**: 7.2.x以上（Docker）
+
+### 推奨ツール
+- **nvm** (Node Version Manager): Node.jsのバージョン管理
+  - Windows: [nvm-windows](https://github.com/coreybutler/nvm-windows)
+  - macOS/Linux: [nvm](https://github.com/nvm-sh/nvm)
+  - 複数のNode.jsバージョンを切り替えて使用可能
+- **Scoop**: Windows用パッケージマネージャー（Javaバージョン管理推奨）
+  - Windows: [Scoop](https://scoop.sh/)
+  - Java 17/21のインストールと切り替えが容易
+  - 他の開発ツール（Node.js、PostgreSQL等）も管理可能
+  - インストール: `iwr -useb get.scoop.sh | iex`
+  - Javaバージョン切り替え: `scoop reset openjdk17` または `scoop reset openjdk21`
 
 ### 本番環境（AWS）
 - **AWS RDS**: PostgreSQL 16.xデータベース
@@ -122,7 +137,31 @@ git clone <repository-url>
 cd AuraTime
 ```
 
-### 2. データベースのセットアップ
+### 2. データベースのセットアップ（Docker推奨）
+
+#### Docker Composeを使用する場合（推奨）
+
+```bash
+# PostgreSQLとRedisを起動
+docker-compose up -d
+
+# コンテナの状態確認
+docker-compose ps
+
+# ログの確認
+docker-compose logs -f
+
+# 停止
+docker-compose down
+
+# データも含めて完全に削除（注意：データが消えます）
+docker-compose down -v
+```
+
+**docker-compose.ymlの内容**:
+- **PostgreSQL 16**: ポート5432、データベース名`auratime`
+- **Redis 7.2**: ポート6379
+- データは永続化されます（Dockerボリューム）
 
 #### ローカルPostgreSQLの場合
 
@@ -132,25 +171,6 @@ createdb auratime
 
 # マイグレーション実行
 # （実装時にマイグレーションツールのコマンドを実行）
-```
-
-#### Dockerを使用する場合
-
-```bash
-# PostgreSQLコンテナの起動
-docker run -d \
-  --name auratime-db \
-  -e POSTGRES_DB=auratime \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 \
-  postgres:16
-
-# Redisコンテナの起動（オプション）
-docker run -d \
-  --name auratime-redis \
-  -p 6379:6379 \
-  redis:7.2-alpine
 ```
 
 ### 3. 初期マイグレーションの実行
@@ -169,7 +189,38 @@ psql -d auratime -f database/migrations/20260101_init.sql
 
 システム管理用ユーザー（`system-bot`）の作成が必要です。詳細は [`docs/310_DDL運用.md`](./docs/310_DDL運用.md) を参照してください。
 
-### 5. フロントエンドのセットアップ
+### 5. Javaのセットアップ（Scoop推奨）
+
+#### Scoopを使用する場合（推奨）
+
+```powershell
+# Scoopが未インストールの場合
+iwr -useb get.scoop.sh | iex
+
+# Javaバケットの追加
+scoop bucket add java
+
+# Java 21 LTSをインストール（推奨）
+scoop install openjdk21
+
+# または、Java 17 LTSをインストール
+scoop install openjdk17
+
+# バージョン確認
+java -version
+
+# バージョン切り替え（必要に応じて）
+scoop reset openjdk21  # Java 21に切り替え
+scoop reset openjdk17  # Java 17に切り替え
+```
+
+#### 手動インストールの場合
+
+1. [Eclipse Temurin (Adoptium)](https://adoptium.net/)からJava 21 LTSまたはJava 17 LTSをダウンロード
+2. インストーラーを実行
+3. 環境変数`JAVA_HOME`と`PATH`を設定
+
+### 6. フロントエンドのセットアップ
 
 ```bash
 # pnpmのインストール（未インストールの場合）
@@ -181,7 +232,7 @@ pnpm install
 pnpm dev
 ```
 
-### 6. バックエンドのセットアップ
+### 7. バックエンドのセットアップ
 
 ```bash
 cd backend
@@ -217,6 +268,7 @@ AuraTime/
 ├── database/
 │   └── migrations/
 │       └── 20260101_init.sql  # 初期マイグレーション
+├── docker-compose.yml    # PostgreSQL/Redis用Docker Compose設定
 └── README.md             # このファイル
 ```
 
