@@ -9,7 +9,9 @@
   - Spring Data JPA (データベースアクセス)
   - Spring AOP (監査ログ)
 - **Java 21 LTS** (またはJava 17 LTS)
-- **Maven / Gradle** (ビルドツール)
+- **Gradle** (ビルドツール)
+  - Kotlin DSL推奨（またはGroovy DSL）
+  - Spring Boot公式推奨
 
 ### フロントエンド
 - **Next.js 16.0.10以上** (TypeScript)
@@ -159,11 +161,17 @@
 - **TypeScript**: Jest + React Testing Library
 
 ### 統合テスト
-- **API**: 全てのAPIエンドポイントで統合テストを実装
-- **データベース**: テスト用データベースを使用
+- **APIエンドポイントの統合テスト**: REST Assured
+- **データベース統合テスト**: Testcontainers（PostgreSQL/Redisのコンテナテスト）
+- **マルチテナント分離の統合テスト**: 重点的に実施
 
 ### E2Eテスト
-- **主要フロー**: 打刻、勤怠修正申請、承認フロー等
+- **主要フローのE2Eテスト**: Playwright
+- **認証フロー、マルチテナント境界のE2Eテスト**: 重点的に実施
+
+### カバレッジ測定
+- **Java**: JaCoCo
+- **JavaScript**: istanbul/nyc
 
 ### テスト重点項目
 - **マルチテナント分離**: 他社データにアクセスできないことを確認

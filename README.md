@@ -8,7 +8,7 @@ AuraTimeは、中規模〜大規模組織をターゲットとした、セキュ
 
 ## 主な機能
 
-- **勤怠管理**: Web/モバイル/ICカードによる打刻、日次集計、シフト管理
+- **勤怠管理**: Web/モバイルによる打刻、日次集計、シフト管理（ICカードは将来対応）
 - **休暇管理**: 各種休暇（有給・特休等）の申請・承認、残数管理
 - **給与管理**: 給与形態（月給・時給）に応じた計算、支給・控除項目の自由設定
 - **支払管理**: 銀行振込データ（FBデータ）作成、支払ステータス管理
@@ -17,11 +17,12 @@ AuraTimeは、中規模〜大規模組織をターゲットとした、セキュ
 ## 技術スタック
 
 ### フロントエンド
-- **Next.js 16.0.10以上** (TypeScript)
+- **Next.js 16.0.10以上** (TypeScript必須)
   - App Router
   - Server Components / Client Components
   - Server Actions
   - **重要**: セキュリティアップデート（CVE-2025-55184, CVE-2025-55183）が適用されたバージョンを使用
+  - **TypeScript**: 必須。JavaScriptは使用しない。
 - **React 19.2.1以上**
   - **重要**: CVE-2025-55182（RCE）が修正されたバージョンを使用
 - **pnpm** (パッケージマネージャー)
@@ -41,7 +42,9 @@ AuraTimeは、中規模〜大規模組織をターゲットとした、セキュ
   - Spring Data JPA (データベースアクセス)
   - Spring AOP (監査ログ)
 - **Java 21 LTS** (またはJava 17 LTS)
-- **Maven / Gradle** (ビルドツール)
+- **Gradle** (ビルドツール)
+  - Kotlin DSL推奨（またはGroovy DSL）
+  - Spring Boot公式推奨
 
 ### データベース・インフラ
 - **PostgreSQL 16.x** (AWS RDS推奨)
@@ -85,18 +88,44 @@ AuraTimeは、中規模〜大規模組織をターゲットとした、セキュ
   - 複数のNode.jsバージョンを切り替えて使用可能
 - **Scoop**: Windows用パッケージマネージャー（Javaバージョン管理推奨）
   - Windows: [Scoop](https://scoop.sh/)
-  - Java 17/21のインストールと切り替えが容易
+  - Java 21（または17）のインストールと切り替えが容易
   - 他の開発ツール（Node.js、PostgreSQL等）も管理可能
   - インストール: `iwr -useb get.scoop.sh | iex`
   - Javaバージョン切り替え: `scoop reset openjdk17` または `scoop reset openjdk21`
+- **Docker Desktop**: PostgreSQL/Redisのコンテナ実行環境
+  - Windows/Mac: [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+  - データベースとRedisをDocker Composeで起動するために必要
+  - インストール後、起動してから `docker-compose up -d` を実行
 
 ### 本番環境（AWS）
-- **AWS RDS**: PostgreSQL 16.xデータベース
-- **AWS ElastiCache**: Redis 7.2.x（セッション・キャッシュ）
+
+#### インフラ構成
+- **AWS RDS (PostgreSQL 16.x)**: メインデータベース
+  - Multi-AZ配置（高可用性）
+  - 自動バックアップ（Point-in-Time Recovery）
+  - 暗号化（AES-256）
+- **AWS ElastiCache (Redis 7.2.x)**: セッション管理・キャッシュ
+  - クラスターモード（スケーラビリティ）
 - **AWS S3**: ファイルストレージ
-- **AWS CloudWatch**: ログ管理
+  - 給与明細PDF、アップロードファイルの保存
+  - ライフサイクルポリシーでアーカイブ
+- **AWS CloudWatch**: ログ管理・監視
+  - アプリケーションログの集約
+  - メトリクス監視（CPU、メモリ、DB接続数）
+  - アラート設定（Slack、PagerDuty連携）
 - **AWS Amplify**: フロントエンドホスティング
-- **AWS EC2 / ECS**: バックエンドホスティング
+  - Next.jsの自動デプロイ
+  - CDN配信
+- **AWS ECS (Fargate)**: バックエンドホスティング（推奨）
+  - コンテナベースのデプロイ
+  - オートスケーリング
+  - または **AWS EC2**: 従来型サーバー（必要に応じて）
+
+#### セキュリティ
+- **VPC**: プライベートサブネットにRDS、ElastiCacheを配置
+- **ALB (Application Load Balancer)**: HTTPS終端、SSL証明書（ACM）
+- **IAM**: 最小権限の原則でアクセス制御
+- **Secrets Manager**: データベース認証情報、APIキーの管理
 
 ## セキュリティに関する重要な注意事項
 
@@ -189,11 +218,11 @@ docker-compose down -v
 # データベース作成
 createdb auratime
 
-# マイグレーション実行
-# （実装時にマイグレーションツールのコマンドを実行）
-```
-
 ### 3. 初期マイグレーションの実行
+
+#### 開発環境（初回セットアップ時のみ）
+
+**注意**: 以下の手動実行は開発環境の初回セットアップ時のみ許可されます。本番環境ではFlywayによる自動実行を使用してください。
 
 ```bash
 # マイグレーションファイルを実行
@@ -204,6 +233,16 @@ psql -d auratime -f database/migrations/20260101_init.sql
 - UUID v7生成関数 (`gen_uuid_v7()`)
 - 全テーブルの作成
 - インデックス、制約の設定
+
+#### 本番環境（推奨）
+
+Spring Bootアプリケーション起動時に、Flywayが自動的にマイグレーションを実行します。
+
+1. マイグレーションファイルを `src/main/resources/db/migration/` に配置
+2. アプリケーションをデプロイ
+3. 起動時に自動実行
+
+詳細は [`docs/310_DDL運用.md`](./docs/310_DDL運用.md) を参照してください。
 
 ### 4. 初期データの投入
 
@@ -242,7 +281,31 @@ scoop reset openjdk17  # Java 17に切り替え
 
 ### 6. フロントエンドのセットアップ
 
+#### nvmを使用する場合（推奨）
+
 ```bash
+# Node.jsのインストール（推奨バージョン: 20.x LTS）
+nvm install 20
+nvm use 20
+
+# バージョン確認
+node --version
+
+# pnpmのインストール（未インストールの場合）
+npm install -g pnpm
+
+# フロントエンドのセットアップ
+cd frontend
+pnpm install
+pnpm dev
+```
+
+#### 手動インストールの場合
+
+```bash
+# Node.jsを公式サイトからインストール
+# https://nodejs.org/ からLTS版をダウンロード・インストール
+
 # pnpmのインストール（未インストールの場合）
 npm install -g pnpm
 
@@ -256,8 +319,6 @@ pnpm dev
 
 ```bash
 cd backend
-./mvnw spring-boot:run
-# または
 ./gradlew bootRun
 ```
 
@@ -282,9 +343,12 @@ AuraTime/
 ├── backend/               # Spring Bootバックエンド
 │   ├── src/
 │   │   └── main/
+│   │       └── resources/
+│   │           └── db/
+│   │               └── migration/  # Flywayマイグレーションファイル
 │   │       ├── java/      # Javaソースコード
 │   │       └── resources/ # 設定ファイル
-│   └── pom.xml           # または build.gradle
+│   └── build.gradle.kts   # Gradleビルド設定（Kotlin DSL）
 ├── database/
 │   └── migrations/
 │       └── 20260101_init.sql  # 初期マイグレーション
@@ -314,6 +378,10 @@ AuraTime/
 - マルチテナント境界のテストを重点的に実施
 - **フロントエンド**: Jest + React Testing Library
 - **バックエンド**: JUnit 5 + Mockito
+- **E2Eテスト**: Playwright（主要フローのE2Eテスト）
+- **統合テスト**: Testcontainers（PostgreSQL/Redisのコンテナテスト）
+- **APIテスト**: REST Assured（RESTful APIのテスト）
+- **カバレッジ**: JaCoCo（Java）、istanbul/nyc（JavaScript）
 
 ## アーキテクチャの特徴
 
@@ -335,10 +403,13 @@ AuraTime/
 
 以下の技術選定は未決定です。詳細は [`docs/900_決定事項_未決定事項.md`](./docs/900_決定事項_未決定事項.md) を参照してください。
 
-- 認証方式（OAuth2/OIDC vs 内製JWT）
 - 行レベルセキュリティ（RLS）の実装有無
 - 給与計算エンジンのDSL導入の是非
 - データアーカイブ方針（7年以上保管が義務付けられる法定帳票データの長期保存方法）
+
+**注**:
+- **認証方式**: 初期実装では内製JWTを使用し、将来的なOAuth2/OIDC対応の可能性を残しています。
+- **RLS（Row Level Security）**: 初期実装ではアプリケーション層でのマルチテナント分離を実装しますが、セキュリティ要件や監査要件に応じて、将来的にDB層でのRLS導入を検討します。
 
 ## ライセンス
 

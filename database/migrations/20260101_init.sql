@@ -501,7 +501,7 @@ CREATE TABLE time_clock_events (
   employee_id uuid NOT NULL REFERENCES employees(id),
   happened_at timestamptz NOT NULL,
   type text NOT NULL,   -- in|out|break_in|break_out
-  source text NOT NULL, -- web|mobile|ic_card|admin
+  source text NOT NULL, -- web|mobile|ic_card|admin (ic_cardは将来対応)
   note text,
 
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -517,7 +517,7 @@ COMMENT ON COLUMN time_clock_events.company_id IS '会社ID';
 COMMENT ON COLUMN time_clock_events.employee_id IS '従業員ID';
 COMMENT ON COLUMN time_clock_events.happened_at IS '発生日時';
 COMMENT ON COLUMN time_clock_events.type IS '打刻種別（in|out|break_in|break_out）';
-COMMENT ON COLUMN time_clock_events.source IS '入力元（web|mobile|ic_card|admin）';
+COMMENT ON COLUMN time_clock_events.source IS '入力元（web|mobile|ic_card|admin）。ic_cardは将来対応。';
 COMMENT ON COLUMN time_clock_events.note IS '備考（遅延理由、位置情報等）';
 
 COMMENT ON COLUMN time_clock_events.created_at IS '作成日時';

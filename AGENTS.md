@@ -167,6 +167,7 @@
 1. 打刻APIの実装
    - エンドポイント: `POST /api/v1/time-clock/events`
    - パラメータ: `type` (in|out|break_in|break_out), `source` (web|mobile|ic_card|admin), `happened_at`, `note`
+   - 注: `ic_card`は将来対応（初期実装では`web`と`mobile`のみ実装）
    - `company_id`, `employee_id`は自動設定
    - バリデーション: 未来時刻不可
 
@@ -449,11 +450,17 @@
    - TypeScript: Jest + React Testing Library
 
 2. **統合テスト**
-   - APIエンドポイントの統合テスト
-   - データベース統合テスト
+   - APIエンドポイントの統合テスト: REST Assured
+   - データベース統合テスト: Testcontainers（PostgreSQL/Redisのコンテナテスト）
+   - マルチテナント分離の統合テストを重点的に実施
 
 3. **E2Eテスト**
-   - 主要フローのE2Eテスト
+   - 主要フローのE2Eテスト: Playwright
+   - 認証フロー、マルチテナント境界のE2Eテスト
+
+4. **カバレッジ測定**
+   - Java: JaCoCo
+   - JavaScript: istanbul/nyc
 
 ### ドキュメント更新
 
