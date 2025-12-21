@@ -1,5 +1,5 @@
 erDiagram
-  COMPANIES {
+  m_companies {
     uuid id PK
     string name
     string code
@@ -13,7 +13,7 @@ erDiagram
     uuid deleted_by
   }
 
-  USERS {
+  m_users {
     uuid id PK
     string email
     string family_name
@@ -29,7 +29,7 @@ erDiagram
     uuid deleted_by
   }
 
-  COMPANY_MEMBERSHIPS {
+  r_company_memberships {
     uuid id PK
     uuid company_id FK
     uuid user_id FK
@@ -43,7 +43,7 @@ erDiagram
     uuid deleted_by
   }
 
-  GROUPS {
+  m_groups {
     uuid id PK
     uuid company_id FK
     string type
@@ -59,7 +59,7 @@ erDiagram
     uuid deleted_by
   }
 
-  EMPLOYEES {
+  m_employees {
     uuid id PK
     uuid company_id FK
     uuid user_id FK
@@ -75,7 +75,7 @@ erDiagram
     uuid deleted_by
   }
 
-  EMPLOYEE_GROUPS {
+  h_employee_groups {
     uuid id PK
     uuid company_id FK
     uuid employee_id FK
@@ -91,7 +91,7 @@ erDiagram
     uuid deleted_by
   }
 
-  SHIFT_TEMPLATES {
+  m_shift_templates {
     uuid id PK
     uuid company_id FK
     string name
@@ -107,7 +107,7 @@ erDiagram
     uuid deleted_by
   }
 
-  SHIFT_BREAK_TEMPLATES {
+  r_shift_break_templates {
     uuid id PK
     uuid company_id FK
     uuid shift_template_id FK
@@ -122,13 +122,13 @@ erDiagram
     uuid deleted_by
   }
 
-  SHIFT_ASSIGNMENTS {
+  r_shift_assignments {
     uuid id PK
     uuid company_id FK
     uuid employee_id FK
     date work_date
     uuid shift_template_id FK
-    uuid work_group_id FK
+    uuid group_id FK
     datetime created_at
     uuid created_by
     datetime updated_at
@@ -137,13 +137,13 @@ erDiagram
     uuid deleted_by
   }
 
-  TIME_CLOCK_EVENTS {
+  h_time_clock_events {
     uuid id PK
     uuid company_id FK
     uuid employee_id FK
     datetime happened_at
     string type "in|out|break_in|break_out"
-    string source "web|mobile|ic_card|admin" // ic_cardは将来対応
+    string source "web|mobile|ic_card|admin"
     string note
     datetime created_at
     uuid created_by
@@ -153,7 +153,7 @@ erDiagram
     uuid deleted_by
   }
 
-  TIME_RECORDS {
+  t_time_records {
     uuid id PK
     uuid company_id FK
     uuid employee_id FK
@@ -169,7 +169,7 @@ erDiagram
     datetime submitted_at
     uuid approved_by FK
     datetime approved_at
-    uuid cost_group_id FK
+    uuid group_id FK
     datetime created_at
     uuid created_by
     datetime updated_at
@@ -178,7 +178,7 @@ erDiagram
     uuid deleted_by
   }
 
-  APPROVAL_REQUESTS {
+  t_approval_requests {
     uuid id PK
     uuid company_id FK
     string target_type "time_record|leave_request"
@@ -196,7 +196,7 @@ erDiagram
     uuid deleted_by
   }
 
-  APPROVAL_STEPS {
+  h_approval_steps {
     uuid id PK
     uuid company_id FK
     uuid approval_request_id FK
@@ -213,7 +213,7 @@ erDiagram
     uuid deleted_by
   }
 
-  LEAVE_TYPES {
+  m_leave_types {
     uuid id PK
     uuid company_id FK
     string name
@@ -228,7 +228,7 @@ erDiagram
     uuid deleted_by
   }
 
-  LEAVE_REQUESTS {
+  t_leave_requests {
     uuid id PK
     uuid company_id FK
     uuid employee_id FK
@@ -246,7 +246,7 @@ erDiagram
     uuid deleted_by
   }
 
-  PAYROLL_CALENDARS {
+  m_payroll_calendars {
     uuid id PK
     uuid company_id FK
     string name
@@ -260,7 +260,7 @@ erDiagram
     uuid deleted_by
   }
 
-  PAYROLL_PERIODS {
+  t_payroll_periods {
     uuid id PK
     uuid company_id FK
     uuid payroll_calendar_id FK
@@ -277,7 +277,7 @@ erDiagram
     uuid deleted_by
   }
 
-  COMPENSATION_PLANS {
+  h_compensation_plans {
     uuid id PK
     uuid company_id FK
     uuid employee_id FK
@@ -296,7 +296,7 @@ erDiagram
     uuid deleted_by
   }
 
-  PAY_ITEMS {
+  m_pay_items {
     uuid id PK
     uuid company_id FK
     string code
@@ -312,7 +312,7 @@ erDiagram
     uuid deleted_by
   }
 
-  PAYSLIPS {
+  t_payslips {
     uuid id PK
     uuid company_id FK
     uuid payroll_period_id FK
@@ -329,7 +329,7 @@ erDiagram
     uuid deleted_by
   }
 
-  PAYSLIP_LINES {
+  r_payslip_lines {
     uuid id PK
     uuid company_id FK
     uuid payslip_id FK
@@ -346,7 +346,7 @@ erDiagram
     uuid deleted_by
   }
 
-  PAYMENTS {
+  t_payments {
     uuid id PK
     uuid company_id FK
     uuid payroll_period_id FK
@@ -361,7 +361,7 @@ erDiagram
     uuid deleted_by
   }
 
-  PAYMENT_LINES {
+  r_payment_lines {
     uuid id PK
     uuid company_id FK
     uuid payment_id FK
@@ -375,12 +375,12 @@ erDiagram
     uuid deleted_by
   }
 
-  AUDIT_LOGS {
+  h_audit_logs {
     uuid id PK
     uuid company_id FK
     uuid actor_user_id FK
     string action
-    string target_type "users|employees|etc"
+    string target_type "m_users|m_employees|etc"
     uuid target_id
     json before_data
     json after_data
@@ -394,7 +394,7 @@ erDiagram
     uuid deleted_by
   }
 
-  JOB_RUNS {
+  t_job_runs {
     uuid id PK
     uuid company_id FK
     string job_type "payroll_calculation|etc"
@@ -412,7 +412,7 @@ erDiagram
     uuid deleted_by
   }
 
-  JOB_RUN_EVENTS {
+  h_job_run_events {
     uuid id PK
     uuid company_id FK
     uuid job_run_id FK
@@ -428,51 +428,51 @@ erDiagram
     uuid deleted_by
   }
 
-  COMPANIES ||--o{ COMPANY_MEMBERSHIPS : has
-  USERS ||--o{ COMPANY_MEMBERSHIPS : joins
+  m_companies ||--o{ r_company_memberships : has
+  m_users ||--o{ r_company_memberships : joins
 
-  COMPANIES ||--o{ GROUPS : has
-  GROUPS ||--o{ GROUPS : parent_child
+  m_companies ||--o{ m_groups : has
+  m_groups ||--o{ m_groups : parent_child
 
-  COMPANIES ||--o{ EMPLOYEES : employs
-  EMPLOYEES ||--o{ COMPENSATION_PLANS : set_to
-  USERS ||--o{ EMPLOYEES : maps_to
+  m_companies ||--o{ m_employees : employs
+  m_employees ||--o{ h_compensation_plans : set_to
+  m_users ||--o{ m_employees : maps_to
 
-  EMPLOYEES ||--o{ EMPLOYEE_GROUPS : belongs
-  GROUPS ||--o{ EMPLOYEE_GROUPS : includes
+  m_employees ||--o{ h_employee_groups : belongs
+  m_groups ||--o{ h_employee_groups : includes
 
-  COMPANIES ||--o{ COMPENSATION_PLANS : has
-  COMPANIES ||--o{ SHIFT_TEMPLATES : has
-  SHIFT_TEMPLATES ||--o{ SHIFT_BREAK_TEMPLATES : contains
-  EMPLOYEES ||--o{ SHIFT_ASSIGNMENTS : scheduled
-  SHIFT_TEMPLATES ||--o{ SHIFT_ASSIGNMENTS : uses
-  GROUPS ||--o{ SHIFT_ASSIGNMENTS : work_group
+  m_companies ||--o{ h_compensation_plans : has
+  m_companies ||--o{ m_shift_templates : has
+  m_shift_templates ||--o{ r_shift_break_templates : contains
+  m_employees ||--o{ r_shift_assignments : scheduled
+  m_shift_templates ||--o{ r_shift_assignments : uses
+  m_groups ||--o{ r_shift_assignments : "group(type=work_location)"
 
-  EMPLOYEES ||--o{ TIME_CLOCK_EVENTS : generates
-  EMPLOYEES ||--o{ TIME_RECORDS : has
-  GROUPS ||--o{ TIME_RECORDS : cost_group
+  m_employees ||--o{ h_time_clock_events : generates
+  m_employees ||--o{ t_time_records : has
+  m_groups ||--o{ t_time_records : "group(type=cost_center)"
 
-  COMPANIES ||--o{ APPROVAL_REQUESTS : has
-  APPROVAL_REQUESTS ||--o{ APPROVAL_STEPS : contains
+  m_companies ||--o{ t_approval_requests : has
+  t_approval_requests ||--o{ h_approval_steps : contains
 
-  COMPANIES ||--o{ LEAVE_TYPES : defines
-  EMPLOYEES ||--o{ LEAVE_REQUESTS : requests
-  LEAVE_TYPES ||--o{ LEAVE_REQUESTS : categorized
+  m_companies ||--o{ m_leave_types : defines
+  m_employees ||--o{ t_leave_requests : requests
+  m_leave_types ||--o{ t_leave_requests : categorized
 
-  COMPANIES ||--o{ PAYROLL_CALENDARS : has
-  PAYROLL_CALENDARS ||--o{ PAYROLL_PERIODS : creates
-  PAYROLL_PERIODS ||--o{ PAYSLIPS : generates
-  EMPLOYEES ||--o{ PAYSLIPS : receives
-  PAYSLIPS ||--o{ PAYSLIP_LINES : details
-  COMPANIES ||--o{ PAY_ITEMS : defines
-  PAY_ITEMS ||--o{ PAYSLIP_LINES : used_by
+  m_companies ||--o{ m_payroll_calendars : has
+  m_payroll_calendars ||--o{ t_payroll_periods : creates
+  t_payroll_periods ||--o{ t_payslips : generates
+  m_employees ||--o{ t_payslips : receives
+  t_payslips ||--o{ r_payslip_lines : details
+  m_companies ||--o{ m_pay_items : defines
+  m_pay_items ||--o{ r_payslip_lines : used_by
 
-  PAYROLL_PERIODS ||--o{ PAYMENTS : pays
-  PAYMENTS ||--o{ PAYMENT_LINES : lines
-  PAYSLIPS ||--o{ PAYMENT_LINES : settled_by
+  t_payroll_periods ||--o{ t_payments : pays
+  t_payments ||--o{ r_payment_lines : lines
+  t_payslips ||--o{ r_payment_lines : settled_by
 
-  COMPANIES ||--o{ AUDIT_LOGS : has
-  USERS ||--o{ AUDIT_LOGS : acts
+  m_companies ||--o{ h_audit_logs : has
+  m_users ||--o{ h_audit_logs : acts
 
-  COMPANIES ||--o{ JOB_RUNS : runs
-  JOB_RUNS ||--o{ JOB_RUN_EVENTS : logs
+  m_companies ||--o{ t_job_runs : runs
+  t_job_runs ||--o{ h_job_run_events : logs
