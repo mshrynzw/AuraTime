@@ -203,7 +203,7 @@ docker-compose down -v
   ```bash
   # Dockerのバージョン確認（起動していれば表示される）
   docker --version
-  
+
   # Docker Composeのバージョン確認
   docker-compose --version
   ```
@@ -323,6 +323,67 @@ cd backend
 ./gradlew bootRun
 ```
 
+### 8. VS Codeの設定（推奨）
+
+プロジェクトには`.vscode`フォルダが含まれており、推奨拡張機能とワークスペース設定が定義されています。
+
+#### 推奨拡張機能のインストール
+
+VS Codeを開くと、推奨拡張機能のインストールを促す通知が表示されます。以下の拡張機能が推奨されています：
+
+**フロントエンド開発:**
+- ESLint
+- Prettier
+- TypeScript
+- Tailwind CSS IntelliSense
+- React Snippets
+
+**バックエンド開発:**
+- Extension Pack for Java
+- Spring Boot Tools
+- Spring Boot Dashboard
+
+**共通:**
+- GitLens
+- Markdown All in One
+- PostgreSQL
+- Docker
+
+#### ワークスペース設定
+
+`.vscode/settings.json`には以下の設定が含まれています：
+
+- **自動フォーマット**: 保存時に自動でコードをフォーマット
+- **ESLint自動修正**: 保存時にESLintエラーを自動修正
+- **インポート整理**: 保存時に未使用のインポートを削除
+- **タブサイズ**: TypeScript/JavaScriptは2スペース、Javaは4スペース
+- **ファイルエンコーディング**: UTF-8、改行コードはLF
+
+#### デバッグ設定
+
+`.vscode/launch.json`には以下のデバッグ設定が含まれています：
+
+- **Next.js: debug server-side**: サーバーサイドのデバッグ
+- **Next.js: debug client-side**: クライアントサイドのデバッグ（Chrome）
+- **Spring Boot: debug**: Spring Bootアプリケーションのデバッグ
+
+#### タスク設定
+
+`.vscode/tasks.json`には以下のタスクが定義されています：
+
+- **Frontend: dev server**: フロントエンド開発サーバーの起動
+- **Backend: bootRun**: バックエンドアプリケーションの起動
+- **Database: start**: Docker Composeでデータベースを起動
+
+**使用方法:**
+1. `Ctrl+Shift+P` (Windows) / `Cmd+Shift+P` (Mac) でコマンドパレットを開く
+2. `Tasks: Run Task` を選択
+3. 実行したいタスクを選択
+
+#### 個人設定
+
+個人固有の設定を追加したい場合は、`.vscode/settings.local.json`を作成してください（このファイルは`.gitignore`に含まれています）。
+
 ## プロジェクト構造
 
 ```
@@ -352,6 +413,11 @@ AuraTime/
 ├── database/
 │   └── migrations/
 │       └── 20260101_init.sql  # 初期マイグレーション
+├── .vscode/              # VS Code設定（推奨拡張機能、ワークスペース設定）
+│   ├── extensions.json   # 推奨拡張機能
+│   ├── settings.json     # ワークスペース設定
+│   ├── launch.json       # デバッグ設定
+│   └── tasks.json        # タスク設定
 ├── docker-compose.yml    # PostgreSQL/Redis用Docker Compose設定
 └── README.md             # このファイル
 ```

@@ -98,7 +98,9 @@ bin/
 .metadata
 
 # VS Code
-.vscode/
+# .vscode/ はチーム開発のため共有（extensions.json, settings.json, launch.json, tasks.json）
+# 個人設定は .vscode/settings.local.json など別ファイルで管理
+.vscode/settings.local.json
 *.code-workspace
 
 # Cursor

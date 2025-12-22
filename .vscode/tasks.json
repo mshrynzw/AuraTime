@@ -1,0 +1,31 @@
+﻿{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Frontend: dev server",
+      "type": "shell",
+      "command": "pnpm dev",
+      "options": {
+        "cwd": "${workspaceFolder}/frontend"
+      },
+      "isBackground": true
+    },
+    {
+      "label": "Backend: bootRun",
+      "type": "shell",
+      "command": "./gradlew bootRun",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "isBackground": true
+    },
+    {
+      "label": "Database: start",
+      "type": "shell",
+      "command": "docker-compose up -d",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    }
+  ]
+}
