@@ -1,4 +1,4 @@
-﻿{
+{
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.codeActionsOnSave": {
@@ -31,5 +31,6 @@
     ["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
   ],
   "java.configuration.updateBuildConfiguration": "automatic",
-  "java.saveActions.organizeImports": true
+  "java.saveActions.organizeImports": true,
+  "java.compile.nullAnalysis.mode": "automatic"
 }

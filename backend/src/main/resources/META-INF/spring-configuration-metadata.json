@@ -1,0 +1,17 @@
+{
+  "properties": [
+    {
+      "name": "jwt.secret",
+      "type": "java.lang.String",
+      "description": "JWT token signing secret key. Must be at least 256 bits long.",
+      "defaultValue": "your-256-bit-secret-key-change-this-in-production-environment"
+    },
+    {
+      "name": "jwt.expiration",
+      "type": "java.lang.Long",
+      "description": "JWT token expiration time in milliseconds.",
+      "defaultValue": 86400000
+    }
+  ]
+}
+
