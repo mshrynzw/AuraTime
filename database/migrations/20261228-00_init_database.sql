@@ -4,6 +4,48 @@
 -- GROUPSに部署/勤務地/コストセンター等を統合
 -- SYSTEM_LOGSは外部（CloudWatch等）想定のためDBには作らない
 -- =========================================================
+--
+-- 使用方法:
+--   1. データベースを削除して再作成する場合（開発環境のみ）:
+--      このスクリプトの先頭部分（データベース削除セクション）のコメントを外してください
+--      重要: postgres データベースに接続してから実行してください
+--      psql -U postgres -d postgres -f database/migrations/20261228-00_init_database.sql
+--
+--   2. docker-compose を使用している場合:
+--      【PowerShellの場合】
+--      Get-Content database/migrations/20261228-00_init_database.sql | docker exec -i auratime-postgres psql -U postgres -d auratime
+--
+--      【Bash/CMDの場合】
+--      docker exec -i auratime-postgres psql -U postgres -d auratime < database/migrations/220261228-00_init_database.sql
+-- =========================================================
+
+-- =========================================================
+-- データベース削除・再作成（開発環境のみ）
+-- =========================================================
+-- 重要: このセクションは開発環境でのみ使用してください
+--       本番環境では絶対に実行しないでください
+--
+-- 実行方法（3段階で実行）:
+--   1. 既存の接続を強制終了:
+--      docker exec -i auratime-postgres psql -U postgres -d postgres -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = 'auratime' AND pid <> pg_backend_pid();"
+--
+--   2. データベース削除・再作成:
+--      docker exec -i auratime-postgres psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS auratime;"
+--      docker exec -i auratime-postgres psql -U postgres -d postgres -c "CREATE DATABASE auratime WITH OWNER = postgres ENCODING = 'UTF8' LC_COLLATE = 'C' LC_CTYPE = 'C' TEMPLATE = template0;"
+--
+--   3. スキーマ作成（このファイルを実行）:
+--      docker cp database/migrations/20261228-00_init_database.sql auratime-postgres:/tmp/init_database.sql
+--      docker exec -i auratime-postgres psql -U postgres -d auratime -f /tmp/init_database.sql
+--
+--   4. 初期データ投入（別ファイルを実行）:
+--      docker cp database/migrations/20261228-01_init_data.sql auratime-postgres:/tmp/init_data.sql
+--      docker exec -i auratime-postgres psql -U postgres -d auratime -f /tmp/init_data.sql
+-- =========================================================
+
+-- =========================================================
+
+-- クライアントエンコーディングをUTF-8に設定
+SET client_encoding TO 'UTF8';
 
 -- UUID生成（pgcrypto）
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -16,7 +58,8 @@ DECLARE
   uuid_bytes bytea;
 BEGIN
   -- Unixタイムスタンプ（ミリ秒）を取得
-  unix_ts_ms := EXTRACT(EPOCH FROM now()) * 1000;
+  -- EXTRACT(EPOCH FROM now())はnumeric型を返すため、bigintにキャスト
+  unix_ts_ms := (EXTRACT(EPOCH FROM now()) * 1000)::bigint;
 
   -- UUID v7フォーマット: タイムスタンプ(48bit) + バージョン(4bit) + ランダム(12bit) + バリアント(2bit) + ランダム(62bit)
   -- タイムスタンプを48bitに変換（上位16bitは0埋め）
@@ -28,17 +71,17 @@ BEGIN
             set_byte(
               set_byte(
                 gen_random_bytes(16),
-                0, (unix_ts_ms >> 40)::int & 255
+                0, ((unix_ts_ms >> 40) & 255)::int
               ),
-              1, (unix_ts_ms >> 32)::int & 255
+              1, ((unix_ts_ms >> 32) & 255)::int
             ),
-            2, (unix_ts_ms >> 24)::int & 255
+            2, ((unix_ts_ms >> 24) & 255)::int
           ),
-          3, (unix_ts_ms >> 16)::int & 255
+          3, ((unix_ts_ms >> 16) & 255)::int
         ),
-        4, (unix_ts_ms >> 8)::int & 255
+        4, ((unix_ts_ms >> 8) & 255)::int
       ),
-      5, unix_ts_ms::int & 255
+      5, (unix_ts_ms & 255)::int
     );
 
   -- バージョン7を設定（7番目のバイトの上位4bitを0x70に設定）
@@ -1307,4 +1350,12 @@ FOR EACH ROW EXECUTE FUNCTION trg_set_updated_at();
 -- 初期データ投入では "systemユーザー" を最初に作る運用が必要です。
 -- DEFERRABLE INITIALLY DEFERRED を付けてあるので、同一トランザクションで
 -- 自己参照（created_by = 自分）も成立させやすくしています。
+-- =========================================================
+
+-- =========================================================
+-- 初期データ投入
+-- =========================================================
+-- 注意: 初期データ投入は別ファイル（20261229_init_data.sql）で実行してください
+-- 実行方法:
+--   $env:OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content database/migrations/20261229_init_data.sql -Encoding UTF8 | docker exec -i auratime-postgres psql -U postgres -d auratime
 -- =========================================================

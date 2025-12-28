@@ -4,34 +4,34 @@
 
 ## 概要
 
-AuraTimeは、中規模〜大規模組織をターゲットとした、セキュアでスケーラブルなマルチテナント型「勤怠・給与管理システム」です。組織の複雑な構造（部署、チーム、プロジェクト、コストセンター）に柔軟に対応し、正確な労働時間の集計から給与計算、支払管理までを一気通貫でサポートします。
+AuraTime は、中規模〜大規模組織をターゲットとした、セキュアでスケーラブルなマルチテナント型「勤怠・給与管理システム」です。組織の複雑な構造（部署、チーム、プロジェクト、コストセンター）に柔軟に対応し、正確な労働時間の集計から給与計算、支払管理までを一気通貫でサポートします。
 
 ## 主な機能
 
-- **勤怠管理**: PWAによるWeb/モバイル打刻、日次集計、シフト管理（ICカードは将来対応）
+- **勤怠管理**: PWA による Web/モバイル打刻、日次集計、シフト管理（IC カードは将来対応）
 - **休暇管理**: 各種休暇（有給・特休等）の申請・承認、残数管理
 - **給与管理**: 給与形態（月給・時給）に応じた計算、支給・控除項目の自由設定
-- **支払管理**: 銀行振込データ（FBデータ）作成、支払ステータス管理
+- **支払管理**: 銀行振込データ（FB データ）作成、支払ステータス管理
 - **監査・ログ**: 業務データ変更履歴の保持、ジョブ実行履歴の可視化
 
 ## 技術スタック
 
 ### フロントエンド
 
-- **Next.js 16.0.10以上** (TypeScript必須)
+- **Next.js 16.0.10 以上** (TypeScript 必須)
   - App Router
   - Server Components / Client Components
   - Server Actions
   - **重要**: セキュリティアップデート（CVE-2025-55184, CVE-2025-55183）が適用されたバージョンを使用
-  - **TypeScript**: 必須。JavaScriptは使用しない。
-- **React 19.2.1以上**
+  - **TypeScript**: 必須。JavaScript は使用しない。
+- **React 19.2.1 以上**
   - **重要**: CVE-2025-55182（RCE）が修正されたバージョンを使用
 - **pnpm** (パッケージマネージャー)
   - 厳密な依存関係管理
   - ディスク容量の節約
   - 高速なインストール
 - **Tailwind CSS 4.x** (スタイリング)
-- **Shadcn UI** (UIコンポーネント)
+- **Shadcn UI** (UI コンポーネント)
 - **React Hook Form** (フォーム管理)
 - **Zod** (バリデーション)
 - **React Query** (データフェッチング)
@@ -39,28 +39,28 @@ AuraTimeは、中規模〜大規模組織をターゲットとした、セキュ
 
 ### バックエンド
 
-- **Spring Boot 3.3.x以上** (Java)
+- **Spring Boot 3.3.x 以上** (Java)
   - Spring Security (認証・認可)
   - Spring Batch (バッチ処理)
   - Spring Data JPA (データベースアクセス)
   - Spring AOP (監査ログ)
-- **Java 21 LTS** (またはJava 17 LTS)
+- **Java 21 LTS** (または Java 17 LTS)
 - **Gradle** (ビルドツール)
-  - Kotlin DSL推奨（またはGroovy DSL）
-  - Spring Boot公式推奨
+  - Kotlin DSL 推奨（または Groovy DSL）
+  - Spring Boot 公式推奨
 
 ### データベース・インフラ
 
-- **PostgreSQL 16.x** (AWS RDS推奨)
-  - UUID v7生成関数 (`gen_uuid_v7()`) が必要
+- **PostgreSQL 16.x** (AWS RDS 推奨)
+  - UUID v7 生成関数 (`gen_uuid_v7()`) が必要
   - 拡張機能: `pgcrypto`
-- **Redis 7.2.x以上** (ElastiCache推奨)
+- **Redis 7.2.x 以上** (ElastiCache 推奨)
   - セッションストア
   - キャッシュ
   - キュー管理（オプション）
 - **AWS S3** (ファイルストレージ)
-  - 給与明細PDF
-  - CSV/Excel出力
+  - 給与明細 PDF
+  - CSV/Excel 出力
 - **AWS CloudWatch** (ログ管理)
   - システムログ
   - アプリケーションログ
@@ -68,40 +68,40 @@ AuraTimeは、中規模〜大規模組織をターゲットとした、セキュ
 ### デプロイメント
 
 - **フロントエンド**: AWS Amplify
-  - Git連携で自動デプロイ
-  - CloudFrontで高速配信
+  - Git 連携で自動デプロイ
+  - CloudFront で高速配信
 - **バックエンド**: AWS EC2 / ECS
-  - Dockerコンテナ化
+  - Docker コンテナ化
   - ロードバランサー対応
 
 ## システム要件
 
 ### 開発環境
 
-- **Node.js**: 20.x LTS以上（または22.x LTS）
-  - 最新版（v24.x等）も開発環境では使用可能
-  - 本番環境ではLTS版を推奨
-- **pnpm**: 10.x以上（パッケージマネージャー）
-  - 最新版: 10.26.1（2025年1月時点）
-- **Java**: 21 LTS（または17 LTS）
+- **Node.js**: 20.x LTS 以上（または 22.x LTS）
+  - 最新版（v24.x 等）も開発環境では使用可能
+  - 本番環境では LTS 版を推奨
+- **pnpm**: 10.x 以上（パッケージマネージャー）
+  - 最新版: 10.26.1（2025 年 1 月時点）
+- **Java**: 21 LTS（または 17 LTS）
 - **PostgreSQL**: 16.x（Docker）
-- **Redis**: 7.2.x以上（Docker）
+- **Redis**: 7.2.x 以上（Docker）
 
 ### 推奨ツール
 
-- **nvm** (Node Version Manager): Node.jsのバージョン管理
+- **nvm** (Node Version Manager): Node.js のバージョン管理
   - Windows: [nvm-windows](https://github.com/coreybutler/nvm-windows)
   - macOS/Linux: [nvm](https://github.com/nvm-sh/nvm)
-  - 複数のNode.jsバージョンを切り替えて使用可能
-- **Scoop**: Windows用パッケージマネージャー（Javaバージョン管理推奨）
+  - 複数の Node.js バージョンを切り替えて使用可能
+- **Scoop**: Windows 用パッケージマネージャー（Java バージョン管理推奨）
   - Windows: [Scoop](https://scoop.sh/)
-  - Java 21（または17）のインストールと切り替えが容易
-  - 他の開発ツール（Node.js、PostgreSQL等）も管理可能
+  - Java 21（または 17）のインストールと切り替えが容易
+  - 他の開発ツール（Node.js、PostgreSQL 等）も管理可能
   - インストール: `iwr -useb get.scoop.sh | iex`
-  - Javaバージョン切り替え: `scoop reset openjdk17` または `scoop reset openjdk21`
-- **Docker Desktop**: PostgreSQL/Redisのコンテナ実行環境
+  - Java バージョン切り替え: `scoop reset openjdk17` または `scoop reset openjdk21`
+- **Docker Desktop**: PostgreSQL/Redis のコンテナ実行環境
   - Windows/Mac: [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-  - データベースとRedisをDocker Composeで起動するために必要
+  - データベースと Redis を Docker Compose で起動するために必要
   - インストール後、起動してから `docker-compose up -d` を実行
 
 ### 本番環境（AWS）
@@ -109,21 +109,21 @@ AuraTimeは、中規模〜大規模組織をターゲットとした、セキュ
 #### インフラ構成
 
 - **AWS RDS (PostgreSQL 16.x)**: メインデータベース
-  - Multi-AZ配置（高可用性）
+  - Multi-AZ 配置（高可用性）
   - 自動バックアップ（Point-in-Time Recovery）
   - 暗号化（AES-256）
 - **AWS ElastiCache (Redis 7.2.x)**: セッション管理・キャッシュ
   - クラスターモード（スケーラビリティ）
 - **AWS S3**: ファイルストレージ
-  - 給与明細PDF、アップロードファイルの保存
+  - 給与明細 PDF、アップロードファイルの保存
   - ライフサイクルポリシーでアーカイブ
 - **AWS CloudWatch**: ログ管理・監視
   - アプリケーションログの集約
-  - メトリクス監視（CPU、メモリ、DB接続数）
-  - アラート設定（PWA通知、PagerDuty連携）
+  - メトリクス監視（CPU、メモリ、DB 接続数）
+  - アラート設定（PWA 通知、PagerDuty 連携）
 - **AWS Amplify**: フロントエンドホスティング
-  - Next.jsの自動デプロイ
-  - CDN配信
+  - Next.js の自動デプロイ
+  - CDN 配信
 - **AWS ECS (Fargate)**: バックエンドホスティング（推奨）
   - コンテナベースのデプロイ
   - オートスケーリング
@@ -131,16 +131,16 @@ AuraTimeは、中規模〜大規模組織をターゲットとした、セキュ
 
 #### セキュリティ
 
-- **VPC**: プライベートサブネットにRDS、ElastiCacheを配置
-- **ALB (Application Load Balancer)**: HTTPS終端、SSL証明書（ACM）
+- **VPC**: プライベートサブネットに RDS、ElastiCache を配置
+- **ALB (Application Load Balancer)**: HTTPS 終端、SSL 証明書（ACM）
 - **IAM**: 最小権限の原則でアクセス制御
-- **Secrets Manager**: データベース認証情報、APIキーの管理
+- **Secrets Manager**: データベース認証情報、API キーの管理
 
 ## セキュリティに関する重要な注意事項
 
 ### Next.js / React
 
-- **必須**: Next.js 16.0.10以上、React 19.2.1以上を使用してください
+- **必須**: Next.js 16.0.10 以上、React 19.2.1 以上を使用してください
 - これらのバージョンには、以下の脆弱性の修正が含まれています：
   - CVE-2025-55184: Denial of Service（DoS）
   - CVE-2025-55183: Source Code Exposure
@@ -166,8 +166,8 @@ AuraTimeは、中規模〜大規模組織をターゲットとした、セキュ
 ### 主要ドキュメント
 
 - **設計**: [`docs/100_基本設計/110_基本設計.md`](./docs/100_基本設計/110_基本設計.md), [`docs/200_詳細設計/221_DB設計.md`](./docs/200_詳細設計/221_DB設計.md)
-- **API仕様**: [`docs/200_詳細設計/240_API.md`](./docs/200_詳細設計/240_API.md)
-- **ER図**: [`docs/200_詳細設計/210_ER図.mmd`](./docs/200_詳細設計/210_ER図.mmd)
+- **API 仕様**: [`docs/200_詳細設計/240_API.md`](./docs/200_詳細設計/240_API.md)
+- **ER 図**: [`docs/200_詳細設計/210_ER図.mmd`](./docs/200_詳細設計/210_ER図.mmd)
 - **セキュリティ**: [`docs/200_詳細設計/260_セキュリティー.md`](./docs/200_詳細設計/260_セキュリティー.md)
 
 ## セットアップ
@@ -179,11 +179,11 @@ git clone <repository-url>
 cd AuraTime
 ```
 
-### 2. データベースのセットアップ（Docker推奨）
+### 2. データベースのセットアップ（Docker 推奨）
 
-#### Docker Composeを使用する場合（推奨）
+#### Docker Compose を使用する
 
-**前提条件**: Docker Desktopが起動している必要があります。
+**前提条件**: Docker Desktop が起動している必要があります。
 
 ```bash
 # 1. Docker Desktopの起動確認
@@ -210,9 +210,9 @@ docker-compose down -v
 **トラブルシューティング**:
 
 - `unable to get image` または `The system cannot find the file specified` エラーが出る場合
-  - Docker Desktopが起動していない可能性があります
-  - Docker Desktopを起動してから、再度 `docker-compose up -d` を実行してください
-- Docker Desktopの起動確認方法
+  - Docker Desktop が起動していない可能性があります
+  - Docker Desktop を起動してから、再度 `docker-compose up -d` を実行してください
+- Docker Desktop の起動確認方法
 
   ```bash
   # Dockerのバージョン確認（起動していれば表示される）
@@ -222,38 +222,42 @@ docker-compose down -v
   docker-compose --version
   ```
 
-**docker-compose.ymlの内容**:
+**docker-compose.yml の内容**:
 
-- **PostgreSQL 16**: ポート5432、データベース名`auratime`
-- **Redis 7.2**: ポート6379
-- データは永続化されます（Dockerボリューム）
-
-#### ローカルPostgreSQLの場合
-
-```bash
-# データベース作成
-createdb auratime
+- **PostgreSQL 16**: ポート 5432、データベース名`auratime`
+- **Redis 7.2**: ポート 6379
+- データは永続化されます（Docker ボリューム）
 
 ### 3. 初期マイグレーションの実行
 
 #### 開発環境（初回セットアップ時のみ）
 
-**注意**: 以下の手動実行は開発環境の初回セットアップ時のみ許可されます。本番環境ではFlywayによる自動実行を使用してください。
+**注意**: 以下の手動実行は開発環境の初回セットアップ時のみ許可されます。本番環境では Flyway による自動実行を使用してください。
 
 ```bash
-# マイグレーションファイルを実行
-psql -d auratime -f database/migrations/20260101_init.sql
+# 1. データベース削除・再作成
+docker exec -i auratime-postgres psql -U postgres -d postgres -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = 'auratime' AND pid <> pg_backend_pid();"
+docker exec -i auratime-postgres psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS auratime;"
+docker exec -i auratime-postgres psql -U postgres -d postgres -c "CREATE DATABASE auratime WITH OWNER = postgres ENCODING = 'UTF8' LC_COLLATE = 'C' LC_CTYPE = 'C' TEMPLATE = template0;"
+
+# 2. スキーマ作成
+docker cp database/migrations/20261228-00_init_database.sql auratime-postgres:/tmp/init_database.sql
+docker exec -i auratime-postgres psql -U postgres -d auratime -f /tmp/init_database.sql
+
+# 3. 初期データ投入
+docker cp database/migrations/20261228-01_init_data.sql auratime-postgres:/tmp/init_data.sql
+docker exec -i auratime-postgres psql -U postgres -d auratime -f /tmp/init_data.sql
 ```
 
 **注意**: 初期マイグレーションには以下が含まれます：
 
-- UUID v7生成関数 (`gen_uuid_v7()`)
+- UUID v7 生成関数 (`gen_uuid_v7()`)
 - 全テーブルの作成
 - インデックス、制約の設定
 
 #### 本番環境（推奨）
 
-Spring Bootアプリケーション起動時に、Flywayが自動的にマイグレーションを実行します。
+Spring Boot アプリケーション起動時に、Flyway が自動的にマイグレーションを実行します。
 
 1. マイグレーションファイルを `src/main/resources/db/migration/` に配置
 2. アプリケーションをデプロイ
@@ -265,9 +269,9 @@ Spring Bootアプリケーション起動時に、Flywayが自動的にマイグ
 
 システム管理用ユーザー（`system-bot`）の作成が必要です。詳細は [`docs/200_詳細設計/212_DDL運用.md`](./docs/200_詳細設計/212_DDL運用.md) を参照してください。
 
-### 5. Javaのセットアップ（Scoop推奨）
+### 5. Java のセットアップ（Scoop 推奨）
 
-#### Scoopを使用する場合（推奨）
+#### Scoop を使用する場合（推奨）
 
 ```powershell
 # Scoopが未インストールの場合
@@ -295,11 +299,12 @@ refreshenv
 
 **トラブルシューティング**:
 
-- **Java 21をインストールしたのに、`java -version`でJava 8（1.8.0_471等）やJava 17が表示される場合**
-  - システムのPATHに古いJavaバージョン（Java 8等）が含まれていて、ScoopのJava 21より優先されている可能性があります
+- **Java 21 をインストールしたのに、`java -version`で Java 8（1.8.0_471 等）や Java 17 が表示される場合**
+
+  - システムの PATH に古い Java バージョン（Java 8 等）が含まれていて、Scoop の Java 21 より優先されている可能性があります
   - 以下の手順で対処してください：
 
-    1. **Javaのインストール場所を確認**
+    1. **Java のインストール場所を確認**
 
        ```powershell
        # 現在使用されているJavaのパスを確認
@@ -309,7 +314,7 @@ refreshenv
        scoop list | Select-String java
        ```
 
-    2. **ScoopのJava 21を有効化**
+    2. **Scoop の Java 21 を有効化**
 
        ```powershell
        scoop reset openjdk21
@@ -318,8 +323,9 @@ refreshenv
        ```
 
     3. **それでも古いバージョンが表示される場合**
-       - システムの環境変数`PATH`にJava 8のパスが含まれている可能性があります
-       - 以下のコマンドでPATHを確認し、Java 8のパスを削除または後ろに移動してください：
+
+       - システムの環境変数`PATH`に Java 8 のパスが含まれている可能性があります
+       - 以下のコマンドで PATH を確認し、Java 8 のパスを削除または後ろに移動してください：
 
          ```powershell
          # 環境変数PATHを確認
@@ -330,19 +336,21 @@ refreshenv
          ```
 
        - 環境変数の編集方法：
-         1. Windowsの設定 → システム → 詳細情報 → システムの詳細設定
+         1. Windows の設定 → システム → 詳細情報 → システムの詳細設定
          2. 「環境変数」ボタンをクリック
          3. 「システム環境変数」の`PATH`を選択して「編集」
-         4. Java 8のパス（例：`C:\Program Files\Java\jdk1.8.0_471\bin`）を削除または下に移動
-         5. PowerShellを再起動して確認
+         4. Java 8 のパス（例：`C:\Program Files\Java\jdk1.8.0_471\bin`）を削除または下に移動
+         5. PowerShell を再起動して確認
 
 - **`scoop reset openjdk21`実行時に「The following instances of "openjdk21" are still running」エラーが表示される場合**
-  - 実行中のJavaプロセス（IDE、アプリケーションサーバー等）が原因です
+
+  - 実行中の Java プロセス（IDE、アプリケーションサーバー等）が原因です
   - 以下のいずれかの方法で対処してください：
-    1. **実行中のJavaアプリケーションを終了する**（推奨）
-       - IDE（IntelliJ IDEA、Eclipse等）を閉じる
-       - Spring Bootアプリケーションを停止する
-       - その他のJavaアプリケーションを終了する
+
+    1. **実行中の Java アプリケーションを終了する**（推奨）
+       - IDE（IntelliJ IDEA、Eclipse 等）を閉じる
+       - Spring Boot アプリケーションを停止する
+       - その他の Java アプリケーションを終了する
     2. **強制終了する場合**（注意：データ損失の可能性あり）
 
        ```powershell
@@ -358,16 +366,19 @@ refreshenv
        ```
 
        **注意**: コマンドのタイポに注意してください
-       - `-Force`（正しい）: 大文字のF、小文字のorce
+
+       - `-Force`（正しい）: 大文字の F、小文字の orce
        - パラメーター間は半角スペースを使用してください（全角スペースはエラーになります）
 
     3. **プロセスを終了しても新しいプロセスが起動し続ける場合**
-       - IDE（IntelliJ IDEA、Eclipse、VS Code等）が自動的にJavaプロセスを再起動している可能性があります
+
+       - IDE（IntelliJ IDEA、Eclipse、VS Code 等）が自動的に Java プロセスを再起動している可能性があります
        - 以下の手順で対処してください：
-         1. **IDEを完全に終了する**
-            - IDEのウィンドウを閉じるだけでは不十分な場合があります
-            - タスクマネージャーでIDEのプロセスも確認し、終了してください
-         2. **すべてのJavaプロセスを終了してから、すぐに`scoop reset`を実行**
+
+         1. **IDE を完全に終了する**
+            - IDE のウィンドウを閉じるだけでは不十分な場合があります
+            - タスクマネージャーで IDE のプロセスも確認し、終了してください
+         2. **すべての Java プロセスを終了してから、すぐに`scoop reset`を実行**
 
             ```powershell
             # すべてのJavaプロセスを終了
@@ -377,24 +388,24 @@ refreshenv
             scoop reset openjdk21
             ```
 
-         3. **IDEを起動する前に、Javaバージョンの切り替えを完了する**
+         3. **IDE を起動する前に、Java バージョンの切り替えを完了する**
             - `scoop reset openjdk21`を実行
-            - `refreshenv`を実行（またはPowerShellを再起動）
-            - `java -version`でJava 21が表示されることを確認
-            - その後、IDEを起動
+            - `refreshenv`を実行（または PowerShell を再起動）
+            - `java -version`で Java 21 が表示されることを確認
+            - その後、IDE を起動
 
-    4. **PowerShellを再起動してから再度実行**
-       - 新しいPowerShellウィンドウを開いてから`scoop reset openjdk21`を実行
+    4. **PowerShell を再起動してから再度実行**
+       - 新しい PowerShell ウィンドウを開いてから`scoop reset openjdk21`を実行
 
 #### 手動インストールの場合
 
-1. [Eclipse Temurin (Adoptium)](https://adoptium.net/)からJava 21 LTSまたはJava 17 LTSをダウンロード
+1. [Eclipse Temurin (Adoptium)](https://adoptium.net/)から Java 21 LTS または Java 17 LTS をダウンロード
 2. インストーラーを実行
 3. 環境変数`JAVA_HOME`と`PATH`を設定
 
 ### 6. フロントエンドのセットアップ
 
-#### nvmを使用する場合（推奨）
+#### nvm を使用する場合（推奨）
 
 ```bash
 # Node.jsのインストール（推奨バージョン: 20.x LTS）
@@ -430,7 +441,7 @@ pnpm dev
 
 ### 7. バックエンドのセットアップ
 
-**前提条件**: Gradle Wrapperファイル（`gradlew`または`gradlew.bat`）が存在する必要があります。
+**前提条件**: Gradle Wrapper ファイル（`gradlew`または`gradlew.bat`）が存在する必要があります。
 
 **Windows (PowerShell):**
 
@@ -446,28 +457,29 @@ cd backend
 ./gradlew bootRun
 ```
 
-**注意**: PowerShellでは`./gradlew`ではなく`.\gradlew.bat`を使用してください。`./gradlew`はエラーになります。
+**注意**: PowerShell では`./gradlew`ではなく`.\gradlew.bat`を使用してください。`./gradlew`はエラーになります。
 
 **トラブルシューティング**:
 
 - **`gradlew.bat`が見つからない場合**
-  - Gradle Wrapperファイルが生成されていない可能性があります
-  - 以下の手順でGradle Wrapperを生成してください：
 
-    1. **Gradleをインストール**（Scoop推奨）
+  - Gradle Wrapper ファイルが生成されていない可能性があります
+  - 以下の手順で Gradle Wrapper を生成してください：
+
+    1. **Gradle をインストール**（Scoop 推奨）
 
        ```powershell
        scoop install gradle
        ```
 
-    2. **Gradle Wrapperを生成**
+    2. **Gradle Wrapper を生成**
 
        ```powershell
        cd backend
        gradle wrapper --gradle-version 8.9
        ```
 
-       **注意**: `gradle wrapper`コマンドが失敗する場合（Gradle 9.xでKotlin DSLの互換性問題が発生する場合）は、以下の手順で手動でGradle Wrapperを作成してください：
+       **注意**: `gradle wrapper`コマンドが失敗する場合（Gradle 9.x で Kotlin DSL の互換性問題が発生する場合）は、以下の手順で手動で Gradle Wrapper を作成してください：
 
        1. **`gradle/wrapper`ディレクトリを作成**
 
@@ -495,13 +507,14 @@ cd backend
           Invoke-WebRequest -Uri "https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar" -OutFile "gradle\wrapper\gradle-wrapper.jar"
           ```
 
-       4. **`gradlew.bat`を作成**（標準的なGradle Wrapperスクリプトをコピー）
+       4. **`gradlew.bat`を作成**（標準的な Gradle Wrapper スクリプトをコピー）
 
-          - Spring Initializrで生成されたプロジェクトからコピーするか、[Gradle公式リポジトリ](https://github.com/gradle/gradle/tree/v8.9.0/gradle/wrapper)から取得してください
+          - Spring Initializr で生成されたプロジェクトからコピーするか、[Gradle 公式リポジトリ](https://github.com/gradle/gradle/tree/v8.9.0/gradle/wrapper)から取得してください
 
     3. **生成されたファイルを確認**
-       - `gradlew`（Unix用）
-       - `gradlew.bat`（Windows用）
+
+       - `gradlew`（Unix 用）
+       - `gradlew.bat`（Windows 用）
        - `gradle/wrapper/gradle-wrapper.properties`
        - `gradle/wrapper/gradle-wrapper.jar`
 
@@ -517,20 +530,20 @@ cd backend
        .\gradlew.bat bootRun
        ```
 
-  - または、Gradleがインストールされている場合は直接実行することもできます：
+  - または、Gradle がインストールされている場合は直接実行することもできます：
 
     ```powershell
     cd backend
     gradle bootRun
     ```
 
-### 8. VS Codeの設定（推奨）
+### 8. VS Code の設定（推奨）
 
 プロジェクトには`.vscode`フォルダが含まれており、推奨拡張機能とワークスペース設定が定義されています。
 
 #### 推奨拡張機能のインストール
 
-VS Codeを開くと、推奨拡張機能のインストールを促す通知が表示されます。以下の拡張機能が推奨されています：
+VS Code を開くと、推奨拡張機能のインストールを促す通知が表示されます。以下の拡張機能が推奨されています：
 
 **フロントエンド開発:**
 
@@ -558,10 +571,10 @@ VS Codeを開くと、推奨拡張機能のインストールを促す通知が�
 `.vscode/settings.json`には以下の設定が含まれています：
 
 - **自動フォーマット**: 保存時に自動でコードをフォーマット
-- **ESLint自動修正**: 保存時にESLintエラーを自動修正
+- **ESLint 自動修正**: 保存時に ESLint エラーを自動修正
 - **インポート整理**: 保存時に未使用のインポートを削除
-- **タブサイズ**: TypeScript/JavaScriptは2スペース、Javaは4スペース
-- **ファイルエンコーディング**: UTF-8、改行コードはLF
+- **タブサイズ**: TypeScript/JavaScript は 2 スペース、Java は 4 スペース
+- **ファイルエンコーディング**: UTF-8、改行コードは LF
 
 #### デバッグ設定
 
@@ -569,7 +582,7 @@ VS Codeを開くと、推奨拡張機能のインストールを促す通知が�
 
 - **Next.js: debug server-side**: サーバーサイドのデバッグ
 - **Next.js: debug client-side**: クライアントサイドのデバッグ（Chrome）
-- **Spring Boot: debug**: Spring Bootアプリケーションのデバッグ
+- **Spring Boot: debug**: Spring Boot アプリケーションのデバッグ
 
 #### タスク設定
 
@@ -577,7 +590,7 @@ VS Codeを開くと、推奨拡張機能のインストールを促す通知が�
 
 - **Frontend: dev server**: フロントエンド開発サーバーの起動
 - **Backend: bootRun**: バックエンドアプリケーションの起動
-- **Database: start**: Docker Composeでデータベースを起動
+- **Database: start**: Docker Compose でデータベースを起動
 
 **使用方法:**
 
@@ -653,7 +666,7 @@ AuraTime/
 
 ### コーディング規約
 
-- **フロントエンド**: ESLint + Prettier（Next.js標準）
+- **フロントエンド**: ESLint + Prettier（Next.js 標準）
 - **バックエンド**: Google Java Style Guide または Checkstyle
 - **コミットメッセージ**: Conventional Commits
 
@@ -672,24 +685,26 @@ AuraTime/
 #### バックエンドテスト
 
 - **単体テスト**: JUnit 5 + Mockito
+
   - コントローラー: `backend/src/test/java/com/auratime/api/`
   - サービス: `backend/src/test/java/com/auratime/service/`
   - ユーティリティ: `backend/src/test/java/com/auratime/util/`
   - フィルター: `backend/src/test/java/com/auratime/filter/`
   - 例外ハンドラー: `backend/src/test/java/com/auratime/api/v1/exception/`
 
-- **統合テスト**: Testcontainers（PostgreSQL/Redisのコンテナテスト）
+- **統合テスト**: Testcontainers（PostgreSQL/Redis のコンテナテスト）
+
   - フォルダー: `backend/src/test/java/com/auratime/integration/`
   - 認証フロー: `AuthIntegrationTest.java`
   - 認可テスト: `AuthorizationTest.java`
   - マルチテナント分離: `MultiTenantIsolationTest.java`
 
-- **APIテスト**: REST Assured（RESTful APIのテスト）
+- **API テスト**: REST Assured（RESTful API のテスト）
   - 統合テスト内で実施（`backend/src/test/java/com/auratime/integration/`）
 
-#### E2Eテスト
+#### E2E テスト
 
-- **E2Eテスト**: Playwright（主要フローのE2Eテスト）
+- **E2E テスト**: Playwright（主要フローの E2E テスト）
   - フォルダー: `e2e/`（将来実装予定）
 
 #### カバレッジ
@@ -702,33 +717,33 @@ AuraTime/
 
 ### マルチテナント設計
 
-- 1つのデータベース内で `company_id` による厳密なデータ分離
+- 1 つのデータベース内で `company_id` による厳密なデータ分離
 - 共有スキーマ方式を採用
 
-### ID管理モデル
+### ID 管理モデル
 
 - **ユーザー（`m_users`）**: ログイン用の認証主体
 - **従業員（`m_employees`）**: 会社ごとの雇用契約情報
-- 1つのユーザーが複数の会社に所属可能（兼務対応）
+- 1 つのユーザーが複数の会社に所属可能（兼務対応）
 
 ### データ保護
 
 - 全テーブルにソフト削除機能
 - 監査列（`created_by`, `updated_by`）による変更履歴の追跡
-- UUID v7による推測困難なID生成
+- UUID v7 による推測困難な ID 生成
 
 ## 未決定事項
 
 以下の技術選定は未決定です。詳細は [`docs/000_要件定義/010_決定事項_未決定事項.md`](./docs/000_要件定義/010_決定事項_未決定事項.md) を参照してください。
 
 - 行レベルセキュリティ（RLS）の実装有無
-- 給与計算エンジンのDSL導入の是非
-- データアーカイブ方針（7年以上保管が義務付けられる法定帳票データの長期保存方法）
+- 給与計算エンジンの DSL 導入の是非
+- データアーカイブ方針（7 年以上保管が義務付けられる法定帳票データの長期保存方法）
 
 **注**:
 
-- **認証方式**: 初期実装では内製JWTを使用し、将来的なOAuth2/OIDC対応の可能性を残しています。
-- **RLS（Row Level Security）**: 初期実装ではアプリケーション層でのマルチテナント分離を実装しますが、セキュリティ要件や監査要件に応じて、将来的にDB層でのRLS導入を検討します。
+- **認証方式**: 初期実装では内製 JWT を使用し、将来的な OAuth2/OIDC 対応の可能性を残しています。
+- **RLS（Row Level Security）**: 初期実装ではアプリケーション層でのマルチテナント分離を実装しますが、セキュリティ要件や監査要件に応じて、将来的に DB 層での RLS 導入を検討します。
 
 ## ライセンス
 

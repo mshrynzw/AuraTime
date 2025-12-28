@@ -36,9 +36,35 @@ export default function LoadingScreen({
 
   return (
     <div className={`${containerClasses} ${className}`}>
-      <div className="flex flex-col items-center gap-4">
-        <Spinner className="size-8 text-primary" />
-        {message && <p className="text-sm text-muted-foreground">{message}</p>}
+      <div className="flex flex-col items-center gap-6 opacity-0 animate-[fadeIn_0.3s_ease-in-out_0s_forwards]">
+        <div className="relative">
+          {/* 背景のパルスリング */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute size-16 rounded-full bg-primary/20 animate-ping" />
+            <div className="absolute size-12 rounded-full bg-primary/10 animate-pulse" />
+          </div>
+          {/* メインのSpinner */}
+          <div className="relative">
+            <Spinner
+              className={`${
+                fullScreen ? "size-12" : "size-8"
+              } text-primary drop-shadow-lg`}
+            />
+          </div>
+        </div>
+        {message && (
+          <div className="flex flex-col items-center gap-2 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.15s_forwards]">
+            <p className="text-sm font-medium text-foreground/90 tracking-wide">
+              {message}
+            </p>
+            {/* ドットアニメーション */}
+            <div className="flex gap-1.5 mt-1">
+              <span className="size-1.5 rounded-full bg-primary/60 animate-pulse [animation-delay:0ms]" />
+              <span className="size-1.5 rounded-full bg-primary/60 animate-pulse [animation-delay:150ms]" />
+              <span className="size-1.5 rounded-full bg-primary/60 animate-pulse [animation-delay:300ms]" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

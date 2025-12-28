@@ -101,3 +101,13 @@
   font-weight: 400;
   font-style: normal;
 }
+
+/* フェードインアニメーション */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

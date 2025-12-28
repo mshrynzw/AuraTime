@@ -1,5 +1,6 @@
 import AuthGuard from "@/components/layout/AuthGuard";
 import Navbar from "@/components/layout/Navbar";
+import NavigationLoader from "@/components/layout/NavigationLoader";
 
 export default function ProtectedLayout({
   children,
@@ -8,6 +9,7 @@ export default function ProtectedLayout({
 }) {
   return (
     <AuthGuard>
+      <NavigationLoader />
       <Navbar />
       {children}
     </AuthGuard>

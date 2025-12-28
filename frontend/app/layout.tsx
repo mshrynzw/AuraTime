@@ -1,5 +1,5 @@
 import AuroraBackground from "@/components/aurora/AuroraBackground";
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -16,9 +16,8 @@ export const metadata: Metadata = {
     title: "AuraTime",
   },
   icons: {
-    icon: [
-      { url: "/icons/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    icon: [{ url: "/icons/favicon.ico", sizes: "any", type: "image/x-icon" }],
+    other: [
       {
         url: "/icons/android-chrome-192x192.png",
         sizes: "192x192",
@@ -39,11 +38,6 @@ export const metadata: Metadata = {
     ],
   },
 };
-
-export const viewport: Viewport = {
-  themeColor: "#0066cc",
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
