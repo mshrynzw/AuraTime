@@ -3,9 +3,7 @@ package com.auratime.domain;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -129,10 +127,10 @@ public class User {
 
     /**
      * 作成者ユーザーID
-     * AuditorAwareImplにより自動設定されます
+     * AuthServiceで手動設定されます（システムボット作成時は自分自身のID）
+     * 注意: システムボット作成時に自分自身のIDに更新するため、updatable = falseは設定していません
      */
-    @CreatedBy
-    @Column(name = "created_by", nullable = false, updatable = false)
+    @Column(name = "created_by", nullable = false)
     private UUID createdBy;
 
     /**
@@ -145,9 +143,8 @@ public class User {
 
     /**
      * 更新者ユーザーID
-     * AuditorAwareImplにより自動設定されます
+     * AuthServiceで手動設定されます（システムボット作成時は自分自身のID）
      */
-    @LastModifiedBy
     @Column(name = "updated_by", nullable = false)
     private UUID updatedBy;
 
@@ -168,4 +165,5 @@ public class User {
      */
     @Column(name = "deleted_by")
     private UUID deletedBy;
+
 }

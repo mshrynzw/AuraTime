@@ -12,12 +12,15 @@ import com.auratime.api.v1.dto.LoginRequest;
 import com.auratime.api.v1.dto.LoginResponse;
 import com.auratime.api.v1.dto.MeResponse;
 import com.auratime.api.v1.dto.RegisterRequest;
+import com.auratime.domain.Company;
 import com.auratime.domain.CompanyMembership;
 import com.auratime.domain.User;
 import com.auratime.repository.CompanyMembershipRepository;
+import com.auratime.repository.CompanyRepository;
 import com.auratime.repository.UserRepository;
 import com.auratime.util.CompanyContext;
 import com.auratime.util.JwtTokenProvider;
+import com.auratime.util.SystemConstants;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +68,9 @@ public class AuthService {
 
     /** 会社所属リポジトリ */
     private final CompanyMembershipRepository companyMembershipRepository;
+
+    /** 会社リポジトリ */
+    private final CompanyRepository companyRepository;
 
     /** パスワードエンコーダー（BCrypt） */
     private final PasswordEncoder passwordEncoder;
@@ -116,6 +122,7 @@ public class AuthService {
 
         // ユーザーエンティティを作成
         // ステータスは"active"に設定（デフォルト値）
+        // created_by/updated_byはシステムボットのIDを設定
         User user = User.builder()
                 .email(request.getEmail())
                 .passwordHash(hashedPassword)
@@ -124,13 +131,33 @@ public class AuthService {
                 .familyNameKana(request.getFamilyNameKana())
                 .firstNameKana(request.getFirstNameKana())
                 .status("active")
+                // システムボットのIDを設定（DEFERRABLE制約により、トランザクション内で参照可能）
+                .createdBy(systemBotId)
+                .updatedBy(systemBotId)
+                .build();
+
+        // ユーザーを保存
+        @SuppressWarnings("null")
+        User savedUser = userRepository.save(user);
+
+        // デフォルトの会社を取得または作成
+        Company defaultCompany = getOrCreateDefaultCompany(systemBotId);
+
+        // 会社メンバーシップを作成（デフォルトロール: "employee"）
+        CompanyMembership membership = CompanyMembership.builder()
+                .companyId(defaultCompany.getId())
+                .userId(savedUser.getId())
+                .role("employee") // 新規登録ユーザーは従業員ロール
+                .joinedAt(java.time.OffsetDateTime.now())
                 .createdBy(systemBotId)
                 .updatedBy(systemBotId)
                 .build();
 
         @SuppressWarnings("null")
-        User savedUser = userRepository.save(user);
-        log.info("User registered successfully: userId={}, email={}", savedUser.getId(), savedUser.getEmail());
+        CompanyMembership savedMembership = companyMembershipRepository.save(membership);
+
+        log.info("User registered successfully: userId={}, email={}, companyId={}, membershipId={}",
+                savedUser.getId(), savedUser.getEmail(), defaultCompany.getId(), savedMembership.getId());
         return savedUser;
     }
 
@@ -317,7 +344,7 @@ public class AuthService {
      * システムボットのIDを取得または作成
      *
      * <p>
-     * システムボット（system-bot@auratime.com）のIDを取得します。
+     * システムボットのIDを取得します。
      * 存在しない場合は作成します。
      * </p>
      *
@@ -328,36 +355,101 @@ public class AuthService {
      * <li>見つからない場合は作成（created_byは自分自身に設定）</li>
      * </ol>
      *
+     * <h3>注意事項</h3>
+     * <p>
+     * システムボット作成時は、created_by/updated_byをnullに設定することで、
+     * Userエンティティの@PrePersistメソッドが一時的なUUIDを設定します。
+     * その後、@PostPersistで自分自身のIDに置き換えられます。
+     * しかし、@PostPersistは永続化後に実行されるため、データベースには反映されません。
+     * そのため、flush()してIDを生成した後、自分自身のIDに設定し、再度save()します。
+     * </p>
+     *
      * @return システムボットのユーザーID
      */
     private UUID getOrCreateSystemBot() {
-        final String SYSTEM_BOT_EMAIL = "system-bot@auratime.com";
-
         // システムボットを検索
-        return userRepository.findByEmailAndDeletedAtIsNull(SYSTEM_BOT_EMAIL)
+        return userRepository.findByEmailAndDeletedAtIsNull(SystemConstants.SYSTEM_BOT_EMAIL)
                 .map(User::getId)
                 .orElseGet(() -> {
                     // システムボットが見つからない場合は作成
-                    log.info("Creating system bot user: email={}", SYSTEM_BOT_EMAIL);
+                    log.info("Creating system bot user: email={}", SystemConstants.SYSTEM_BOT_EMAIL);
+
+                    // システムボットを作成
+                    // 最初は一時的なUUIDを設定（NOT NULL制約を満たすため）
+                    // flush()後に自分自身のIDに置き換える
+                    UUID tempUuid = UUID.randomUUID();
                     User systemBot = User.builder()
-                            .email(SYSTEM_BOT_EMAIL)
-                            .passwordHash(passwordEncoder.encode("system-bot-password"))
+                            .email(SystemConstants.SYSTEM_BOT_EMAIL)
+                            .passwordHash(passwordEncoder.encode(SystemConstants.SYSTEM_BOT_PASSWORD))
                             .familyName("System")
                             .firstName("Bot")
                             .status("active")
+                            // 一時的なUUIDを設定（後で自分自身のIDに置き換える）
+                            .createdBy(tempUuid)
+                            .updatedBy(tempUuid)
                             .build();
 
+                    // 最初のsave()でIDを生成
                     @SuppressWarnings("null")
                     User savedSystemBot = userRepository.save(systemBot);
 
-                    // システムボットのcreated_by/updated_byを自分自身に設定
-                    savedSystemBot.setCreatedBy(savedSystemBot.getId());
-                    savedSystemBot.setUpdatedBy(savedSystemBot.getId());
+                    // flush()してデータベースに反映（IDが生成される）
+                    // DEFERRABLE制約により、トランザクション内で自己参照が可能
+                    userRepository.flush();
+
+                    // システムボットのcreated_by/updated_byを自分自身のIDに設定
+                    UUID systemBotId = savedSystemBot.getId();
+                    savedSystemBot.setCreatedBy(systemBotId);
+                    savedSystemBot.setUpdatedBy(systemBotId);
+
+                    // 再度save()して更新（DEFERRABLE制約により、トランザクション内で自己参照が可能）
                     @SuppressWarnings("null")
                     User updatedSystemBot = userRepository.save(savedSystemBot);
 
                     log.info("System bot created: userId={}", updatedSystemBot.getId());
                     return updatedSystemBot.getId();
+                });
+    }
+
+    /**
+     * デフォルトの会社を取得または作成
+     *
+     * <p>
+     * ユーザー登録時に使用するデフォルトの会社を取得します。
+     * 存在しない場合は作成します。
+     * </p>
+     *
+     * <h3>処理フロー</h3>
+     * <ol>
+     * <li>デフォルトの会社コード（"DEFAULT"）で検索</li>
+     * <li>見つかった場合はその会社を返却</li>
+     * <li>見つからない場合は作成（会社名: "デフォルト会社"）</li>
+     * </ol>
+     *
+     * @param systemBotId システムボットのユーザーID（created_by/updated_by用）
+     * @return デフォルトの会社エンティティ
+     */
+    private Company getOrCreateDefaultCompany(UUID systemBotId) {
+        // デフォルトの会社コードで検索
+        return companyRepository.findByCodeAndDeletedAtIsNull("DEFAULT")
+                .orElseGet(() -> {
+                    // デフォルトの会社が見つからない場合は作成
+                    log.info("Creating default company: code=DEFAULT");
+
+                    Company defaultCompany = Company.builder()
+                            .name("デフォルト会社")
+                            .code("DEFAULT")
+                            .timezone("Asia/Tokyo")
+                            .currency("JPY")
+                            .createdBy(systemBotId)
+                            .updatedBy(systemBotId)
+                            .build();
+
+                    @SuppressWarnings("null")
+                    Company savedCompany = companyRepository.save(defaultCompany);
+
+                    log.info("Default company created: companyId={}, code={}", savedCompany.getId(), savedCompany.getCode());
+                    return savedCompany;
                 });
     }
 }

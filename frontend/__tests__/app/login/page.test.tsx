@@ -1,4 +1,4 @@
-import LoginPage from '@/app/login/page';
+import LoginPage from '@/app/(public)/login/page';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

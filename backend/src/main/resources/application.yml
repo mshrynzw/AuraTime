@@ -65,3 +65,7 @@ jwt:
   secret: ${JWT_SECRET:your-256-bit-secret-key-change-this-in-production-environment}
   expiration: ${JWT_EXPIRATION:86400000} # 24 hours in milliseconds
 
+system:
+  bot:
+    email: ${SYSTEM_BOT_EMAIL:system-bot@auratime.com}
+    password: ${SYSTEM_BOT_PASSWORD:system-bot-password-change-this-in-production}

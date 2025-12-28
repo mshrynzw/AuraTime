@@ -2,6 +2,7 @@
 
 import { MeResponse, authApi } from "@/lib/api/auth";
 import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface AuthContextType {
@@ -17,6 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const login = (token: string) => {
     Cookies.set("auth_token", token, { expires: 1 }); // 1日
@@ -26,9 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     Cookies.remove("auth_token");
     setUser(null);
-    if (typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
+    router.push("/login");
   };
 
   const refreshUser = async () => {
@@ -74,7 +74,3 @@ export function useAuth() {
   }
   return context;
 }
-
-
-
-

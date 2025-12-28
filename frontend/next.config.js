@@ -4,9 +4,14 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
-  eslint: {
-    ignoreDuringBuilds: false,
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.(glsl|vs|fs|vert|frag)$/,
+      type: 'asset/source',
+    });
+    return config;
   },
+  turbopack: {},
 };
 
 module.exports = nextConfig;
