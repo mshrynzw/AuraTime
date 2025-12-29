@@ -240,13 +240,27 @@ docker exec -i auratime-postgres psql -U postgres -d postgres -c "SELECT pg_term
 docker exec -i auratime-postgres psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS auratime;"
 docker exec -i auratime-postgres psql -U postgres -d postgres -c "CREATE DATABASE auratime WITH OWNER = postgres ENCODING = 'UTF8' LC_COLLATE = 'C' LC_CTYPE = 'C' TEMPLATE = template0;"
 
-# 2. スキーマ作成
-docker cp database/migrations/20261228-00_init_database.sql auratime-postgres:/tmp/init_database.sql
-docker exec -i auratime-postgres psql -U postgres -d auratime -f /tmp/init_database.sql
+# 2. マイグレーションの実行（すべてのマイグレーションを順番に実行）
+# 方法1: すべてのマイグレーションを一度に実行（推奨）
+# PowerShellの場合:
+Get-ChildItem database/migrations/*.sql | Sort-Object Name | ForEach-Object {
+  $filename = $_.Name
+  Write-Host "Executing migration: $filename"
+  docker cp $_.FullName "auratime-postgres:/tmp/$filename"
+  docker exec -i auratime-postgres psql -U postgres -d auratime -f "/tmp/$filename"
+}
 
-# 3. 初期データ投入
-docker cp database/migrations/20261228-01_init_data.sql auratime-postgres:/tmp/init_data.sql
-docker exec -i auratime-postgres psql -U postgres -d auratime -f /tmp/init_data.sql
+# Bash/Git Bashの場合:
+for migration in database/migrations/*.sql; do
+  filename=$(basename "$migration")
+  echo "Executing migration: $filename"
+  docker cp "$migration" "auratime-postgres:/tmp/$filename"
+  docker exec -i auratime-postgres psql -U postgres -d auratime -f "/tmp/$filename"
+done
+
+# 方法2: 個別に実行
+docker cp database/migrations/20261229-00_add_invitation_and_password_reset.sql auratime-postgres:/tmp/add_invitation_and_password_reset.sql
+docker exec -i auratime-postgres psql -U postgres -d auratime -f /tmp/add_invitation_and_password_reset.sql
 ```
 
 **注意**: 初期マイグレーションには以下が含まれます：
@@ -675,9 +689,69 @@ AuraTime/
 - 詳細は [`docs/400_テスト/400_テスト設計.md`](./docs/400_テスト/400_テスト設計.md) を参照
 - マルチテナント境界のテストを重点的に実施
 
+#### バックエンドテスト
+
+**Windows (PowerShell):**
+
+PowerShell でテストを実行する場合、文字化けを防ぐために以下の設定を行ってください：
+
+```powershell
+# PowerShellのエンコーディングをUTF-8に設定
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$env:JAVA_TOOL_OPTIONS = "-Dfile.encoding=UTF-8 -Dconsole.encoding=UTF-8"
+
+# すべてのテストを実行
+cd backend
+.\gradlew.bat test
+
+# 特定のテストクラスを実行
+.\gradlew.bat test --tests AuthServiceTest
+
+# 特定のパッケージのテストを実行
+.\gradlew.bat test --tests "com.auratime.integration.*"
+```
+
+**永続的な設定（推奨）**: PowerShell プロファイルに以下を追加すると、毎回設定する必要がなくなります：
+
+```powershell
+# PowerShellプロファイルを開く
+notepad $PROFILE
+
+# 以下の行を追加
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$env:JAVA_TOOL_OPTIONS = "-Dfile.encoding=UTF-8 -Dconsole.encoding=UTF-8"
+```
+
+**macOS / Linux (Bash):**
+
+```bash
+cd backend
+./gradlew test
+```
+
+**文字化けが発生する場合の対処法**:
+
+1. **PowerShell のエンコーディング設定を確認**
+
+   ```powershell
+   [Console]::OutputEncoding.EncodingName
+   # 出力が "Unicode (UTF-8)" であることを確認
+   ```
+
+2. **Gradle の設定を確認**
+
+   - `backend/gradle.properties`に`org.gradle.console=plain`が設定されていることを確認
+   - `org.gradle.jvmargs`に`-Dfile.encoding=UTF-8 -Dconsole.encoding=UTF-8`が含まれていることを確認
+
+3. **PowerShell のフォントを変更**
+   - PowerShell のプロパティでフォントを「MS ゴシック」または「Consolas」に変更
+   - または、Windows Terminal を使用（UTF-8 サポートが優れている）
+
+詳細は [`backend/src/test/java/com/auratime/README.md`](./backend/src/test/java/com/auratime/README.md) を参照してください。
+
 #### フロントエンドテスト
 
-- **単体テスト**: Jest + React Testing Library
+- **単体テスト**: Jest + React Testing Library（[`frontend/__test__`](./frontend/__tests__/README.md)
   - フォルダー: `frontend/__tests__/`
   - ページコンポーネント: `frontend/__tests__/app/`
   - ユーティリティ・バリデーション: `frontend/__tests__/lib/`

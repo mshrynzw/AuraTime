@@ -6,17 +6,23 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.auratime.api.v1.dto.ApiResponse;
+import com.auratime.api.v1.dto.InvitationResponse;
 import com.auratime.api.v1.dto.LoginRequest;
 import com.auratime.api.v1.dto.LoginResponse;
 import com.auratime.api.v1.dto.MeResponse;
+import com.auratime.api.v1.dto.PasswordResetConfirmRequest;
+import com.auratime.api.v1.dto.PasswordResetRequestRequest;
 import com.auratime.api.v1.dto.RegisterRequest;
 import com.auratime.service.AuthService;
+import com.auratime.service.InvitationService;
+import com.auratime.service.PasswordResetService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -47,6 +53,8 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthController {
 
     private final AuthService authService;
+    private final InvitationService invitationService;
+    private final PasswordResetService passwordResetService;
 
     /**
      * ユーザー登録
@@ -110,6 +118,72 @@ public class AuthController {
         MeResponse response = authService.getCurrentUser(authentication);
         String requestId = getRequestId(httpRequest);
         return ResponseEntity.ok(ApiResponse.success(response, requestId));
+    }
+
+    /**
+     * 招待情報取得（公開API）
+     *
+     * <p>
+     * 招待トークンから招待情報を取得します。
+     * ユーザー登録画面で使用されます。
+     * </p>
+     *
+     * @param token       招待トークン
+     * @param httpRequest HTTPリクエスト（リクエストID取得用）
+     * @return 招待情報レスポンス
+     */
+    @GetMapping("/invitations/{token}")
+    public ResponseEntity<ApiResponse<InvitationResponse>> getInvitation(
+            @PathVariable String token,
+            HttpServletRequest httpRequest) {
+        log.info("Getting invitation: token={}", token);
+        InvitationResponse response = invitationService.getInvitationByToken(token);
+        String requestId = getRequestId(httpRequest);
+        return ResponseEntity.ok(ApiResponse.success(response, requestId));
+    }
+
+    /**
+     * パスワードリセット要求
+     *
+     * <p>
+     * メールアドレスからユーザーを検索し、パスワードリセットトークンを発行します。
+     * セキュリティ上の理由から、ユーザーが存在しない場合でも成功レスポンスを返します。
+     * </p>
+     *
+     * @param request     パスワードリセット要求リクエスト
+     * @param httpRequest HTTPリクエスト（リクエストID取得用）
+     * @return 成功レスポンス
+     */
+    @PostMapping("/password-reset/request")
+    public ResponseEntity<ApiResponse<Void>> requestPasswordReset(
+            @RequestBody @Valid PasswordResetRequestRequest request,
+            HttpServletRequest httpRequest) {
+        log.info("Password reset request: email={}", request.getEmail());
+        passwordResetService.requestPasswordReset(request);
+        String requestId = getRequestId(httpRequest);
+        return ResponseEntity.ok(ApiResponse.success(null, requestId));
+    }
+
+    /**
+     * パスワードリセット実行
+     *
+     * <p>
+     * リセットトークンを使用してパスワードを更新します。
+     * トークンは1回のみ使用可能です。
+     * </p>
+     *
+     * @param request     パスワードリセット実行リクエスト
+     * @param httpRequest HTTPリクエスト（リクエストID取得用）
+     * @return 成功レスポンス
+     */
+    @PostMapping("/password-reset/confirm")
+    public ResponseEntity<ApiResponse<Void>> confirmPasswordReset(
+            @RequestBody @Valid PasswordResetConfirmRequest request,
+            HttpServletRequest httpRequest) {
+        log.info("Password reset confirm: token={}", request.getToken());
+        passwordResetService.confirmPasswordReset(request);
+        String requestId = getRequestId(httpRequest);
+        return ResponseEntity.ok(ApiResponse.success(null, requestId));
     }
 
     /**

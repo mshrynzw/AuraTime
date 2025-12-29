@@ -105,4 +105,20 @@ public interface CompanyMembershipRepository extends JpaRepository<CompanyMember
             "WHERE cm.companyId = :companyId " +
             "AND cm.deletedAt IS NULL")
     List<CompanyMembership> findByCompanyIdAndDeletedAtIsNull(@Param("companyId") UUID companyId);
+
+    /**
+     * 会社IDで有効なユーザー数をカウント（削除済みを除く）
+     *
+     * <p>
+     * 指定された会社に所属している有効なユーザー数を取得します。
+     * ライセンス数チェックで使用されます。
+     * </p>
+     *
+     * @param companyId 検索する会社ID
+     * @return 有効なユーザー数
+     */
+    @Query("SELECT COUNT(cm) FROM CompanyMembership cm " +
+            "WHERE cm.companyId = :companyId " +
+            "AND cm.deletedAt IS NULL")
+    long countByCompanyIdAndDeletedAtIsNull(@Param("companyId") UUID companyId);
 }

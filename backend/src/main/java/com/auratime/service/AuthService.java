@@ -1,12 +1,15 @@
 package com.auratime.service;
 
+import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.auratime.api.v1.dto.LoginRequest;
 import com.auratime.api.v1.dto.LoginResponse;
@@ -14,9 +17,13 @@ import com.auratime.api.v1.dto.MeResponse;
 import com.auratime.api.v1.dto.RegisterRequest;
 import com.auratime.domain.Company;
 import com.auratime.domain.CompanyMembership;
+import com.auratime.domain.Employee;
 import com.auratime.domain.User;
+import com.auratime.domain.UserInvitation;
 import com.auratime.repository.CompanyMembershipRepository;
 import com.auratime.repository.CompanyRepository;
+import com.auratime.repository.EmployeeRepository;
+import com.auratime.repository.UserInvitationRepository;
 import com.auratime.repository.UserRepository;
 import com.auratime.util.CompanyContext;
 import com.auratime.util.JwtTokenProvider;
@@ -72,6 +79,15 @@ public class AuthService {
     /** 会社リポジトリ */
     private final CompanyRepository companyRepository;
 
+    /** 従業員リポジトリ */
+    private final EmployeeRepository employeeRepository;
+
+    /** 招待リポジトリ */
+    private final UserInvitationRepository invitationRepository;
+
+    /** 招待サービス */
+    private final InvitationService invitationService;
+
     /** パスワードエンコーダー（BCrypt） */
     private final PasswordEncoder passwordEncoder;
 
@@ -79,86 +95,171 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
 
     /**
-     * ユーザー登録
+     * ユーザー登録（招待トークン方式）
      *
      * <p>
-     * 新規ユーザーを登録します。メールアドレスの重複チェックを行い、
-     * パスワードをハッシュ化してからデータベースに保存します。
+     * 招待トークンを使用してユーザーを登録します。
+     * 既存ユーザーの場合は追加登録、新規ユーザーの場合は新規作成を行います。
      * </p>
      *
      * <h3>処理フロー</h3>
      * <ol>
-     * <li>メールアドレスの重複チェック（削除済みユーザーを除く）</li>
-     * <li>パスワードをBCryptでハッシュ化</li>
-     * <li>ユーザーエンティティを作成（ステータスは"active"）</li>
-     * <li>データベースに保存（@CreatedBy、@LastModifiedByは自動設定）</li>
+     * <li>招待トークンの検証（有効性、期限、使用回数）</li>
+     * <li>ライセンス数チェック</li>
+     * <li>メールアドレスで既存ユーザーを検索</li>
+     * <li>既存ユーザーの場合：パスワード不要、会社所属と従業員レコードのみ作成</li>
+     * <li>新規ユーザーの場合：パスワードハッシュ化、ユーザー作成、会社所属と従業員レコード作成</li>
+     * <li>招待トークンを使用済みにマーク</li>
      * </ol>
      *
      * <h3>注意事項</h3>
      * <ul>
-     * <li>認証されていない状態で呼び出されるため、created_by/updated_byはnullになる可能性があります</li>
-     * <li>初期データ投入時は、手動でsystem-botのIDを設定する必要があります</li>
+     * <li>招待トークンは必須です</li>
+     * <li>既存ユーザーの場合、パスワードは不要です</li>
+     * <li>新規ユーザーの場合、パスワード、氏名は必須です</li>
      * </ul>
      *
-     * @param request 登録リクエスト（メールアドレス、パスワード、氏名等）
+     * @param request 登録リクエスト（招待トークン、メールアドレス、パスワード、氏名等）
      * @return 登録されたユーザーエンティティ
-     * @throws IllegalArgumentException メールアドレスが既に登録されている場合
+     * @throws ResponseStatusException 招待トークンが無効、ライセンス数超過、バリデーションエラーの場合
      */
     public User register(RegisterRequest request) {
-        log.info("User registration request: email={}", request.getEmail());
+        log.info("User registration request: email={}, invitationToken={}", request.getEmail(), request.getInvitationToken());
 
-        // メールアドレスの重複チェック（削除済みユーザーを除く）
-        if (userRepository.findByEmailAndDeletedAtIsNull(request.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("このメールアドレスは既に登録されています");
+        // 招待トークンを検証
+        UserInvitation invitation = invitationRepository
+                .findByTokenAndDeletedAtIsNullAndStatusPending(request.getInvitationToken())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "招待トークンが見つかりません"));
+
+        // 有効性チェック
+        if (!invitation.isValid()) {
+            if (invitation.getExpiresAt().isBefore(java.time.OffsetDateTime.now())) {
+                invitation.setStatus("expired");
+                invitationRepository.save(invitation);
+            }
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "招待トークンが無効または期限切れです");
         }
 
-        // パスワードをBCryptでハッシュ化
-        // 同じパスワードでも異なるハッシュが生成される（ソルトが自動生成される）
-        String hashedPassword = passwordEncoder.encode(request.getPassword());
+        // メールアドレスの一致チェック
+        if (!invitation.getEmail().equals(request.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "招待トークンのメールアドレスと一致しません");
+        }
 
-        // システムボットのIDを取得（created_by/updated_by用）
-        // システムボットが見つからない場合は作成する
+        // ライセンス数チェック
+        Company company = invitation.getCompany();
+        if (company.getMaxUsers() != null) {
+            long currentUserCount = companyMembershipRepository.countByCompanyIdAndDeletedAtIsNull(company.getId());
+            if (currentUserCount >= company.getMaxUsers()) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "ライセンス数の上限に達しています。現在のユーザー数: " + currentUserCount + ", 上限: " + company.getMaxUsers());
+            }
+        }
+
+        // システムボットのIDを取得
         UUID systemBotId = getOrCreateSystemBot();
 
-        // ユーザーエンティティを作成
-        // ステータスは"active"に設定（デフォルト値）
-        // created_by/updated_byはシステムボットのIDを設定
-        User user = User.builder()
-                .email(request.getEmail())
-                .passwordHash(hashedPassword)
-                .familyName(request.getFamilyName())
-                .firstName(request.getFirstName())
-                .familyNameKana(request.getFamilyNameKana())
-                .firstNameKana(request.getFirstNameKana())
-                .status("active")
-                // システムボットのIDを設定（DEFERRABLE制約により、トランザクション内で参照可能）
-                .createdBy(systemBotId)
-                .updatedBy(systemBotId)
-                .build();
+        // 既存ユーザーかどうかを確認
+        Optional<User> existingUserOpt = userRepository.findByEmailAndDeletedAtIsNull(request.getEmail());
 
-        // ユーザーを保存
-        @SuppressWarnings("null")
-        User savedUser = userRepository.save(user);
+        User user;
+        if (existingUserOpt.isPresent()) {
+            // 既存ユーザーの場合：追加登録
+            user = existingUserOpt.get();
+            log.info("Existing user registration: userId={}, email={}", user.getId(), user.getEmail());
 
-        // デフォルトの会社を取得または作成
-        Company defaultCompany = getOrCreateDefaultCompany(systemBotId);
+            // パスワードは不要（既に設定済み）
+            if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "既存ユーザーの場合、パスワードは不要です");
+            }
+        } else {
+            // 新規ユーザーの場合：ユーザー作成
+            log.info("New user registration: email={}", request.getEmail());
 
-        // 会社メンバーシップを作成（デフォルトロール: "employee"）
-        CompanyMembership membership = CompanyMembership.builder()
-                .companyId(defaultCompany.getId())
-                .userId(savedUser.getId())
-                .role("employee") // 新規登録ユーザーは従業員ロール
-                .joinedAt(java.time.OffsetDateTime.now())
-                .createdBy(systemBotId)
-                .updatedBy(systemBotId)
-                .build();
+            // パスワードと氏名のバリデーション
+            if (request.getPassword() == null || request.getPassword().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "新規ユーザーの場合、パスワードは必須です");
+            }
+            if (request.getFamilyName() == null || request.getFamilyName().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "新規ユーザーの場合、姓は必須です");
+            }
+            if (request.getFirstName() == null || request.getFirstName().isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "新規ユーザーの場合、名は必須です");
+            }
 
-        @SuppressWarnings("null")
-        CompanyMembership savedMembership = companyMembershipRepository.save(membership);
+            // パスワードをBCryptでハッシュ化
+            String hashedPassword = passwordEncoder.encode(request.getPassword());
 
-        log.info("User registered successfully: userId={}, email={}, companyId={}, membershipId={}",
-                savedUser.getId(), savedUser.getEmail(), defaultCompany.getId(), savedMembership.getId());
-        return savedUser;
+            // ユーザーエンティティを作成
+            user = User.builder()
+                    .email(request.getEmail())
+                    .passwordHash(hashedPassword)
+                    .familyName(request.getFamilyName())
+                    .firstName(request.getFirstName())
+                    .familyNameKana(request.getFamilyNameKana())
+                    .firstNameKana(request.getFirstNameKana())
+                    .status("active")
+                    .createdBy(systemBotId)
+                    .updatedBy(systemBotId)
+                    .build();
+
+            @SuppressWarnings("null")
+            User savedUser = userRepository.save(user);
+            user = savedUser;
+            log.info("New user created: userId={}, email={}", user.getId(), user.getEmail());
+        }
+
+        // ラムダ式内で使用するためにfinalな変数にコピー
+        final User finalUser = user;
+
+        // 会社メンバーシップを作成（既に存在する場合はスキップ）
+        CompanyMembership membership = companyMembershipRepository
+                .findByUserIdAndCompanyIdAndDeletedAtIsNull(finalUser.getId(), company.getId())
+                .orElseGet(() -> {
+                    CompanyMembership newMembership = CompanyMembership.builder()
+                            .companyId(company.getId())
+                            .userId(finalUser.getId())
+                            .role(invitation.getRole())
+                            .joinedAt(java.time.OffsetDateTime.now())
+                            .createdBy(systemBotId)
+                            .updatedBy(systemBotId)
+                            .build();
+                    @SuppressWarnings("null")
+                    CompanyMembership savedMembership = companyMembershipRepository.save(newMembership);
+                    return savedMembership;
+                });
+
+        // 従業員レコードを作成（既に存在する場合はスキップ）
+        Employee employee = employeeRepository
+                .findByCompanyIdAndEmployeeNoAndDeletedAtIsNull(company.getId(), invitation.getEmployeeNo())
+                .orElseGet(() -> {
+                    // 雇用区分と入社日のデフォルト値
+                    String employmentType = invitation.getEmploymentType() != null
+                            ? invitation.getEmploymentType()
+                            : "fulltime";
+                    java.time.LocalDate hireDate = invitation.getHireDate() != null
+                            ? invitation.getHireDate()
+                            : java.time.LocalDate.now();
+
+                    Employee newEmployee = Employee.builder()
+                            .company(company)
+                            .user(finalUser)
+                            .employeeNo(invitation.getEmployeeNo())
+                            .employmentType(employmentType)
+                            .hireDate(hireDate)
+                            .createdBy(systemBotId)
+                            .updatedBy(systemBotId)
+                            .build();
+                    @SuppressWarnings("null")
+                    Employee savedEmployee = employeeRepository.save(newEmployee);
+                    return savedEmployee;
+                });
+
+        // 招待トークンを使用済みにマーク
+        invitationService.markAsUsed(invitation, user);
+
+        log.info("User registered successfully: userId={}, email={}, companyId={}, employeeId={}, membershipId={}",
+                user.getId(), user.getEmail(), company.getId(), employee.getId(), membership.getId());
+        return user;
     }
 
     /**
@@ -429,27 +530,27 @@ public class AuthService {
      * @param systemBotId システムボットのユーザーID（created_by/updated_by用）
      * @return デフォルトの会社エンティティ
      */
-    private Company getOrCreateDefaultCompany(UUID systemBotId) {
-        // デフォルトの会社コードで検索
-        return companyRepository.findByCodeAndDeletedAtIsNull("DEFAULT")
-                .orElseGet(() -> {
-                    // デフォルトの会社が見つからない場合は作成
-                    log.info("Creating default company: code=DEFAULT");
+    // private Company getOrCreateDefaultCompany(UUID systemBotId) {
+    //     // デフォルトの会社コードで検索
+    //     return companyRepository.findByCodeAndDeletedAtIsNull("DEFAULT")
+    //             .orElseGet(() -> {
+    //                 // デフォルトの会社が見つからない場合は作成
+    //                 log.info("Creating default company: code=DEFAULT");
 
-                    Company defaultCompany = Company.builder()
-                            .name("デフォルト会社")
-                            .code("DEFAULT")
-                            .timezone("Asia/Tokyo")
-                            .currency("JPY")
-                            .createdBy(systemBotId)
-                            .updatedBy(systemBotId)
-                            .build();
+    //                 Company defaultCompany = Company.builder()
+    //                         .name("デフォルト会社")
+    //                         .code("DEFAULT")
+    //                         .timezone("Asia/Tokyo")
+    //                         .currency("JPY")
+    //                         .createdBy(systemBotId)
+    //                         .updatedBy(systemBotId)
+    //                         .build();
 
-                    @SuppressWarnings("null")
-                    Company savedCompany = companyRepository.save(defaultCompany);
+    //                 @SuppressWarnings("null")
+    //                 Company savedCompany = companyRepository.save(defaultCompany);
 
-                    log.info("Default company created: companyId={}, code={}", savedCompany.getId(), savedCompany.getCode());
-                    return savedCompany;
-                });
-    }
+    //                 log.info("Default company created: companyId={}, code={}", savedCompany.getId(), savedCompany.getCode());
+    //                 return savedCompany;
+    //             });
+    // }
 }

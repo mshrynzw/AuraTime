@@ -139,9 +139,9 @@ export default function LoginForm() {
           type="button"
           variant="link"
           className="w-full"
-          onClick={() => router.push("/register")}
+          onClick={() => router.push("/password-reset")}
         >
-          新規登録はこちら
+          パスワードを忘れた場合
         </Button>
       </div>
     </form>

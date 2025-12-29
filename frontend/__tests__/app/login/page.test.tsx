@@ -1,6 +1,5 @@
 import LoginPage from '@/app/(public)/login/page';
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 // モックは jest.setup.js で設定済み
@@ -19,6 +18,10 @@ describe('LoginPage', () => {
     mockGet.mockReturnValue(null);
     mockLogin.mockClear();
     mockAuthApiLogin.mockClear();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   it('正常系：ログインフォームが表示される', () => {
@@ -48,14 +51,21 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     const user = userEvent.setup();
-    await user.type(screen.getByPlaceholderText('メールアドレス'), 'test@example.com');
-    await user.type(screen.getByPlaceholderText('パスワード'), 'password123');
+    const emailInput = screen.getByPlaceholderText('メールアドレス');
+    const passwordInput = screen.getByPlaceholderText('パスワード');
+
+    await user.type(emailInput, 'test@example.com');
+    await user.type(passwordInput, 'Password123!@#');
+
+    // フォーカスを外してバリデーションを実行
+    await user.tab();
+
     await user.click(screen.getByRole('button', { name: 'ログイン' }));
 
     await waitFor(() => {
       expect(mockAuthApiLogin).toHaveBeenCalledWith({
         email: 'test@example.com',
-        password: 'password123',
+        password: 'Password123!@#',
       });
     }, { timeout: 3000 });
 
@@ -91,14 +101,21 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     const user = userEvent.setup();
-    await user.type(screen.getByPlaceholderText('メールアドレス'), 'test@example.com');
-    await user.type(screen.getByPlaceholderText('パスワード'), 'wrongpassword');
+    const emailInput = screen.getByPlaceholderText('メールアドレス');
+    const passwordInput = screen.getByPlaceholderText('パスワード');
+
+    await user.type(emailInput, 'test@example.com');
+    await user.type(passwordInput, 'WrongPassword123!@#');
+
+    // フォーカスを外してバリデーションを実行
+    await user.tab();
+
     await user.click(screen.getByRole('button', { name: 'ログイン' }));
 
     await waitFor(() => {
       // エラーメッセージが表示されることを確認（APIから返されたメッセージまたはデフォルトメッセージ）
       expect(screen.getByText(/メールアドレスまたはパスワードが正しくありません/i)).toBeInTheDocument();
-    });
+    }, { timeout: 3000 });
   });
 });
 

@@ -7,21 +7,99 @@ import {
   type RegisterFormData,
 } from "@/lib/validation/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
 export default function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [invitationInfo, setInvitationInfo] = useState<any>(null);
+  const [loadingInvitation, setLoadingInvitation] = useState(true);
+  const isMountedRef = useRef(true);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
+    watch,
+    setValue,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     mode: "onBlur",
   });
+
+  const invitationToken = watch("invitationToken");
+  const email = watch("email");
+
+  // コンポーネントのアンマウント時にフラグを設定
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // URLパラメータから招待トークンを取得
+  useEffect(() => {
+    const token = searchParams.get("token");
+    if (token) {
+      // 現在の値と異なる場合のみsetValueを呼ぶ（無限ループを防ぐ）
+      const currentToken = watch("invitationToken");
+      if (currentToken !== token) {
+        setValue("invitationToken", token, { shouldValidate: false });
+        loadInvitationInfo(token);
+      }
+    } else {
+      setLoadingInvitation(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // 招待情報を取得
+  const loadInvitationInfo = async (token: string) => {
+    try {
+      const response = await authApi.getInvitation(token);
+      // アンマウント後の状態更新を防ぐ
+      if (!isMountedRef.current) return;
+
+      if (response.success && response.data) {
+        setInvitationInfo(response.data);
+        setValue("email", response.data.email);
+        setLoadingInvitation(false);
+      } else {
+        setError("invitationToken", { message: "招待トークンが無効です" });
+        setLoadingInvitation(false);
+      }
+    } catch (err: any) {
+      // アンマウント後の状態更新を防ぐ
+      if (!isMountedRef.current) return;
+
+      const errorMessage =
+        err.response?.data?.error?.message || "招待情報の取得に失敗しました";
+      setError("invitationToken", { message: errorMessage });
+      setLoadingInvitation(false);
+    }
+  };
+
+  // 招待トークンが変更されたら招待情報を取得
+  // URLパラメータから取得した場合は実行しない（重複を防ぐ）
+  useEffect(() => {
+    const urlToken = searchParams.get("token");
+    if (
+      invitationToken &&
+      invitationToken.length > 0 &&
+      invitationToken !== urlToken
+    ) {
+      loadInvitationInfo(invitationToken);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invitationToken]);
+
+  // パスワードの入力状態で新規ユーザーかどうかを判断
+  // 初期状態では新規ユーザーとして扱い、パスワードフィールドを表示
+  // 既存ユーザーの判定は、バックエンドのregister APIで行われる
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
@@ -39,6 +117,14 @@ export default function RegisterForm() {
     }
   };
 
+  if (loadingInvitation) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600">招待情報を読み込み中...</p>
+      </div>
+    );
+  }
+
   return (
     <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
       {/* エラーメッセージ */}
@@ -49,24 +135,59 @@ export default function RegisterForm() {
       )}
 
       <div className="space-y-4">
+        {/* 招待トークン */}
+        <div>
+          <label
+            htmlFor="invitationToken"
+            className="block text-sm font-medium text-gray-700"
+          >
+            招待トークン <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="invitationToken"
+            type="text"
+            {...register("invitationToken")}
+            className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+              errors.invitationToken
+                ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+            } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none sm:text-sm`}
+            placeholder="招待トークンを入力してください"
+          />
+          {errors.invitationToken && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.invitationToken.message}
+            </p>
+          )}
+          {invitationInfo && (
+            <p className="mt-1 text-sm text-green-600">
+              招待情報を取得しました: {invitationInfo.companyName} (
+              {invitationInfo.role})
+            </p>
+          )}
+        </div>
+
         {/* メールアドレス */}
         <div>
           <label
             htmlFor="email"
             className="block text-sm font-medium text-gray-700"
           >
-            メールアドレス
+            メールアドレス <span className="text-red-500">*</span>
           </label>
           <input
             id="email"
             type="email"
             autoComplete="email"
             {...register("email")}
+            disabled={!!invitationInfo}
             className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
               errors.email
                 ? "border-red-300 focus:border-red-500 focus:ring-red-500"
                 : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
-            } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none sm:text-sm`}
+            } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none sm:text-sm ${
+              invitationInfo ? "bg-gray-100" : ""
+            }`}
             placeholder="example@example.com"
           />
           {errors.email && (
@@ -80,7 +201,7 @@ export default function RegisterForm() {
             htmlFor="password"
             className="block text-sm font-medium text-gray-700"
           >
-            パスワード
+            パスワード <span className="text-red-500">*</span>
           </label>
           <input
             id="password"
@@ -92,7 +213,7 @@ export default function RegisterForm() {
                 ? "border-red-300 focus:border-red-500 focus:ring-red-500"
                 : "border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
             } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none sm:text-sm`}
-            placeholder="8文字以上"
+            placeholder="パスワード"
           />
           {errors.password && (
             <p className="mt-1 text-sm text-red-600">
@@ -107,7 +228,7 @@ export default function RegisterForm() {
             htmlFor="familyName"
             className="block text-sm font-medium text-gray-700"
           >
-            姓
+            姓 <span className="text-red-500">*</span>
           </label>
           <input
             id="familyName"
@@ -134,7 +255,7 @@ export default function RegisterForm() {
             htmlFor="firstName"
             className="block text-sm font-medium text-gray-700"
           >
-            名
+            名 <span className="text-red-500">*</span>
           </label>
           <input
             id="firstName"

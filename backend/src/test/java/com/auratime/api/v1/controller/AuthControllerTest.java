@@ -3,6 +3,8 @@ package com.auratime.api.v1.controller;
 import com.auratime.api.v1.dto.*;
 import com.auratime.service.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -63,6 +66,12 @@ class AuthControllerTest {
 
     @MockBean
     private com.auratime.util.JwtTokenProvider jwtTokenProvider;
+
+    @MockBean
+    private com.auratime.service.PasswordResetService passwordResetService;
+
+    @MockBean
+    private com.auratime.service.InvitationService invitationService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -162,6 +171,105 @@ class AuthControllerTest {
 
         // When & Then
         mockMvc.perform(post("/v1/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("正常系：招待情報取得")
+    void testGetInvitationInfo_Success() throws Exception {
+        // Given
+        String token = "valid-token-123";
+        UUID companyId = UUID.randomUUID();
+        InvitationResponse response = new InvitationResponse();
+        response.setId(UUID.randomUUID());
+        response.setCompanyId(companyId);
+        response.setCompanyName("テスト会社");
+        response.setEmail("invited@example.com");
+        response.setRole("employee");
+        response.setEmployeeNo("EMP001");
+
+        when(invitationService.getInvitationByToken(token)).thenReturn(response);
+
+        // When & Then
+        mockMvc.perform(get("/v1/auth/invitations/{token}", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.email").value("invited@example.com"))
+                .andExpect(jsonPath("$.data.role").value("employee"));
+    }
+
+    @Test
+    @DisplayName("正常系：パスワードリセット要求")
+    void testRequestPasswordReset_Success() throws Exception {
+        // Given
+        PasswordResetRequestRequest request = new PasswordResetRequestRequest();
+        request.setEmail("test@example.com");
+
+        // When & Then
+        mockMvc.perform(post("/v1/auth/password-reset/request")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("異常系：パスワードリセット要求 - バリデーションエラー")
+    void testRequestPasswordReset_ValidationError() throws Exception {
+        // Given
+        PasswordResetRequestRequest request = new PasswordResetRequestRequest();
+        // メールアドレスを未設定
+
+        // When & Then
+        mockMvc.perform(post("/v1/auth/password-reset/request")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("正常系：パスワードリセット実行")
+    void testConfirmPasswordReset_Success() throws Exception {
+        // Given
+        PasswordResetConfirmRequest request = new PasswordResetConfirmRequest();
+        request.setToken("reset-token-123");
+        request.setNewPassword("NewPassword123!");
+
+        // When & Then
+        mockMvc.perform(post("/v1/auth/password-reset/confirm")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    @DisplayName("異常系：パスワードリセット実行 - バリデーションエラー（パスワード未入力）")
+    void testConfirmPasswordReset_ValidationError_PasswordRequired() throws Exception {
+        // Given
+        PasswordResetConfirmRequest request = new PasswordResetConfirmRequest();
+        request.setToken("reset-token-123");
+        // パスワードを未設定
+
+        // When & Then
+        mockMvc.perform(post("/v1/auth/password-reset/confirm")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("異常系：パスワードリセット実行 - バリデーションエラー（パスワード要件不満足）")
+    void testConfirmPasswordReset_ValidationError_PasswordPattern() throws Exception {
+        // Given
+        PasswordResetConfirmRequest request = new PasswordResetConfirmRequest();
+        request.setToken("reset-token-123");
+        request.setNewPassword("short"); // 12文字未満、要件を満たさない
+
+        // When & Then
+        mockMvc.perform(post("/v1/auth/password-reset/confirm")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());

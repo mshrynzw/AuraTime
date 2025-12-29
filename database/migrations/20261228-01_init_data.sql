@@ -1,15 +1,6 @@
 -- =========================================================
 -- 初期データ投入
 -- =========================================================
--- このファイルは、スキーマ作成後に実行してください
--- 実行方法:
---  方法1（推奨）: ファイルを直接マウントして実行（文字化けを回避）
---    docker cp database/migrations/20261229_init_data.sql auratime-postgres:/tmp/init_data.sql
---    docker exec -i auratime-postgres psql -U postgres -d auratime -f /tmp/init_data.sql
---
---  方法2: PowerShellからパイプで実行（文字化けの可能性あり）
---    $env:OutputEncoding = [System.Text.Encoding]::UTF8; Get-Content database/migrations/20261229_init_data.sql -Encoding UTF8 | docker exec -i auratime-postgres psql -U postgres -d auratime
--- =========================================================
 
 -- クライアントエンコーディングをUTF-8に設定
 SET client_encoding TO 'UTF8';
@@ -33,7 +24,7 @@ BEGIN
   END IF;
 
   -- BCryptハッシュを生成（pgcryptoのcrypt関数を使用）
-  v_password_hash := crypt('Passw0rd!', gen_salt('bf', 10));
+  v_password_hash := crypt('Password123!', gen_salt('bf', 10));
 
   -- 1. ユーザーを作成（既に存在しない場合のみ）
   IF v_existing_user_id IS NULL THEN
